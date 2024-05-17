@@ -1,0 +1,11 @@
+{
+  "domain": "yandexgpt_sensor",
+  "name": "YandexGPT sensor",
+  "version": "0.1.0",
+  "codeowners": ["@black-roland"],
+  "dependencies": [],
+  "documentation": "",
+  "iot_class": "cloud_polling",
+  "loggers": ["yandexgpt_sensor"],
+  "requirements": ["yandexgpt-python"]
+}
