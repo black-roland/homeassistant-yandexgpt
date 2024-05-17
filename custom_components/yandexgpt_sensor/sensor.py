@@ -13,14 +13,12 @@ from homeassistant.core import HomeAssistant, CoreState
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from lru import LRU
 from yandex_gpt import YandexGPT, YandexGPTConfigManagerForAPIKey
-
-# from sqlalchemy.util import LRUCache
-# from functools import lru_cache
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "YandexGpt response"
+DEFAULT_NAME = "YandexGpt completion"
 
 CONF_CATALOG_ID = "catalog_id"
 CONF_API_KEY = "api_key"
@@ -73,7 +71,7 @@ class YandexGptSensor(SensorEntity):
         self._yandexgpt = yandexgpt
         self._system_prompt = system_prompt
         self._user_prompt_tpl = user_prompt
-        # self._cache = LRUCache(1000)
+        self._cache = LRU(512)
         self._increment = 0
         self._completion = None
 
@@ -95,12 +93,22 @@ class YandexGptSensor(SensorEntity):
         # TODO: Render system prompt as template
         user_prompt = self._user_prompt_tpl.async_render()
 
+        cache_key = (self._system_prompt, user_prompt)
+        if (completion := self._cache.get(cache_key)) is None:
+            completion = await self.get_ai_completion(self._system_prompt, user_prompt)
+            self._cache[cache_key] = completion
+            self._completion = completion
+        else:
+            self._completion = completion
+
+    async def get_ai_completion(self, system_prompt, user_prompt) -> str:
+        _LOGGER.debug("Sending completion request...")
         completion = await self._yandexgpt.get_async_completion(
             messages=[
-                {"role": "system", "text": self._system_prompt},
+                {"role": "system", "text": system_prompt},
                 {"role": "user", "text": user_prompt},
             ],
             max_tokens=255,
             timeout=30,
         )
-        self._completion = completion[:255]
+        return completion[:255]
