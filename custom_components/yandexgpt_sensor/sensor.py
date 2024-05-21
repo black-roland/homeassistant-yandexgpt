@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
+from typing import Any
 
 import voluptuous as vol
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
@@ -13,6 +14,7 @@ from homeassistant.core import HomeAssistant, CoreState
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.util import dt as dt_util
 from lru import LRU
 from yandex_gpt import YandexGPT, YandexGPTConfigManagerForAPIKey
 
@@ -71,9 +73,9 @@ class YandexGptSensor(SensorEntity):
         self._yandexgpt = yandexgpt
         self._system_prompt = system_prompt
         self._user_prompt_tpl = user_prompt
-        self._cache = LRU(512)
-        self._increment = 0
+        self._cache = LRU(32)
         self._completion = None
+        self._last_updated = None
 
         self._yandexgpt = yandexgpt
 
@@ -83,10 +85,15 @@ class YandexGptSensor(SensorEntity):
 
     @property
     def native_value(self):
-        return self._completion
+        return self._last_updated
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = {"completion": self._completion}
+        return attrs
 
     async def async_update(self) -> None:
-        # Ignore update on HASS restart to reduce API requests count
+        # Ignore update on HASS restart to reduce API requests
         if self.hass.state == CoreState.not_running:
             return
 
@@ -98,17 +105,18 @@ class YandexGptSensor(SensorEntity):
             completion = await self.get_ai_completion(self._system_prompt, user_prompt)
             self._cache[cache_key] = completion
             self._completion = completion
+            self._last_updated = dt_util.utcnow().isoformat()
         else:
             self._completion = completion
 
     async def get_ai_completion(self, system_prompt, user_prompt) -> str:
-        _LOGGER.debug("Sending completion request...")
-        completion = await self._yandexgpt.get_async_completion(
+        _LOGGER.debug("Sending completion request...",
+                      extra={"system_prompt": system_prompt, "user_prompt": user_prompt})
+        return await self._yandexgpt.get_async_completion(
             messages=[
                 {"role": "system", "text": system_prompt},
                 {"role": "user", "text": user_prompt},
             ],
-            max_tokens=255,
+            max_tokens=180,
             timeout=30,
         )
-        return completion[:255]
