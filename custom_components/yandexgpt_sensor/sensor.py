@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass
 from homeassistant.const import (
     CONF_NAME,
 )
@@ -59,20 +59,22 @@ def setup_platform(
 
     device = YandexGptSensor(yandexgpt, name, system_prompt, user_prompt)
 
-    add_entities([device], True)
+    add_entities([device], False)
 
 
 class YandexGptSensor(SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, yandexgpt, name, system_prompt, user_prompt):
+    def __init__(self, yandexgpt, name, system_prompt, user_prompt_tpl):
         self._name = name
         self._state = None
         self._state_attributes = None
+        self._attr_device_class = device_class=SensorDeviceClass.TIMESTAMP
 
         self._yandexgpt = yandexgpt
         self._system_prompt = system_prompt
-        self._user_prompt_tpl = user_prompt
+        self._user_prompt_tpl = user_prompt_tpl
+        self._user_prompt = None
         self._cache = LRU(32)
         self._completion = None
         self._last_updated = None
@@ -89,8 +91,7 @@ class YandexGptSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        attrs = {"completion": self._completion}
-        return attrs
+        return {"completion": self._completion, "system_prompt": self._system_prompt, "user_prompt": self._user_prompt}
 
     async def async_update(self) -> None:
         # Ignore update on HASS restart to reduce API requests
@@ -98,25 +99,40 @@ class YandexGptSensor(SensorEntity):
             return
 
         # TODO: Render system prompt as template
-        user_prompt = self._user_prompt_tpl.async_render()
+        self._user_prompt = self._user_prompt_tpl.async_render()
 
-        cache_key = (self._system_prompt, user_prompt)
+        # FIXME: Remove debugging code
+        self._cache.clear()
+
+        cache_key = (self._system_prompt, self._user_prompt)
         if (completion := self._cache.get(cache_key)) is None:
-            completion = await self.get_ai_completion(self._system_prompt, user_prompt)
+            completion = await self.hass.async_add_executor_job(self.get_ai_completion, self._system_prompt, self._user_prompt)
+            # completion = await self.get_ai_completion(self._system_prompt, self._user_prompt)
             self._cache[cache_key] = completion
             self._completion = completion
-            self._last_updated = dt_util.utcnow().isoformat()
+            self._last_updated = dt_util.now()
         else:
             self._completion = completion
 
-    async def get_ai_completion(self, system_prompt, user_prompt) -> str:
+    # async def get_ai_completion(self, system_prompt, user_prompt) -> str:
+    #     _LOGGER.debug("Sending completion request...",
+    #                   extra={"system_prompt": system_prompt, "user_prompt": user_prompt})
+    #     return await self._yandexgpt.get_async_completion(
+    #         messages=[
+    #             {"role": "system", "text": system_prompt},
+    #             {"role": "user", "text": user_prompt},
+    #         ],
+    #         max_tokens=180,
+    #         timeout=120,
+    #     )
+
+    def get_ai_completion(self, system_prompt, user_prompt) -> str:
         _LOGGER.debug("Sending completion request...",
                       extra={"system_prompt": system_prompt, "user_prompt": user_prompt})
-        return await self._yandexgpt.get_async_completion(
+        return self._yandexgpt.get_sync_completion(
             messages=[
                 {"role": "system", "text": system_prompt},
                 {"role": "user", "text": user_prompt},
             ],
             max_tokens=180,
-            timeout=30,
         )
