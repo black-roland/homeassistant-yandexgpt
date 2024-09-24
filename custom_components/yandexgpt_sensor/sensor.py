@@ -123,6 +123,7 @@ class YandexGptSensor(SensorEntity):
     #             {"role": "user", "text": user_prompt},
     #         ],
     #         max_tokens=180,
+    #         temperature=0,
     #         timeout=120,
     #     )
 
@@ -135,4 +136,5 @@ class YandexGptSensor(SensorEntity):
                 {"role": "user", "text": user_prompt},
             ],
             max_tokens=180,
+            temperature=0,
         )
