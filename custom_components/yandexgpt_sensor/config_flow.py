@@ -3,21 +3,26 @@
 from __future__ import annotations
 
 import logging
+from types import MappingProxyType
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
+    OptionsFlow, ConfigEntry,
 )
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers import llm
+from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig
 
 from .const import (
     DOMAIN,
     CONF_CATALOG_ID,
     CONF_API_KEY,
-    CONF_MODEL_TYPE,
+    CONF_MODEL_TYPE, CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
+    RECOMMENDED_TEMPERATURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,6 +34,11 @@ STEP_API_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_MODEL_TYPE): str,
     }
 )
+
+RECOMMENDED_OPTIONS = {
+    CONF_RECOMMENDED: True,
+    CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,
+}
 
 
 class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -66,10 +76,100 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
             data=user_input,
         )
 
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> OptionsFlow:
+        """Create the options flow."""
+        return YandexGPTOptionsFlow(config_entry)
+
 
 class YandexGPTOptionsFlow(OptionsFlow):
     """YandexGPT options flow."""
 
-    async def async_step_done(self, _: dict[str, Any] | None = None) -> FlowResult:
-        """Finish the flow."""
-        return self.async_create_entry(title="", data={})
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+        self.last_rendered_recommended = config_entry.options.get(
+            CONF_RECOMMENDED, False
+        )
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
+
+        if user_input is not None:
+            if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
+                return self.async_create_entry(title="", data=user_input)
+
+            # Re-render the options again, now with the recommended options shown/hidden
+            self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
+
+            options = {
+                CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
+                CONF_PROMPT: user_input[CONF_PROMPT],
+            }
+
+        suggested_values = options.copy()
+        if not suggested_values.get(CONF_PROMPT):
+            suggested_values[CONF_PROMPT] = llm.DEFAULT_INSTRUCTIONS_PROMPT
+
+        schema = self.add_suggested_values_to_schema(
+            vol.Schema(yandexgpt_config_option_schema(self.hass, options)),
+            suggested_values,
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+        )
+
+
+def yandexgpt_config_option_schema(
+    hass: HomeAssistant,
+    options: dict[str, Any] | MappingProxyType[str, Any],
+) -> dict:
+    """Return a schema for YandexGPT completion options."""
+    # hass_apis: list[SelectOptionDict] = [
+    #     SelectOptionDict(
+    #         label="No control",
+    #         value="none",
+    #     )
+    # ]
+    # hass_apis.extend(
+    #     SelectOptionDict(
+    #         label=api.name,
+    #         value=api.id,
+    #     )
+    #     for api in llm.async_get_apis(hass)
+    # )
+
+    schema = {
+        vol.Optional(CONF_PROMPT): TemplateSelector(),
+        vol.Required(
+            CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
+        ): bool,
+    }
+
+    if options.get(CONF_RECOMMENDED):
+        return schema
+
+    schema.update(
+        {
+            # vol.Optional(
+            #     CONF_CHAT_MODEL,
+            #     default=RECOMMENDED_CHAT_MODEL,
+            # ): str,
+            vol.Optional(
+                CONF_MAX_TOKENS,
+                default=RECOMMENDED_MAX_TOKENS,
+            ): int,
+            vol.Optional(
+                CONF_TEMPERATURE,
+                default=RECOMMENDED_TEMPERATURE,
+            ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
+        }
+    )
+    return schema

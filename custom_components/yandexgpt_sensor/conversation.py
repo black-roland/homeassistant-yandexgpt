@@ -6,13 +6,20 @@ from typing import Literal
 
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import MATCH_ALL
+from homeassistant.const import MATCH_ALL, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import intent
+from homeassistant.exceptions import HomeAssistantError, TemplateError
+from homeassistant.helpers import intent, llm
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
+from homeassistant.helpers import template
+from homeassistant.components.conversation import trace
 
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
+    RECOMMENDED_MAX_TOKENS
+
+# Max number of back and forth with the LLM to generate a response
+MAX_TOOL_ITERATIONS = 10
 
 
 async def async_setup_entry(
@@ -35,6 +42,8 @@ class YandexGPTConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = entry
+        # FIXME: user YandexGPTMessage type instead of string
+        self.history: dict[str, list[str]] = {}
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
@@ -45,31 +54,142 @@ class YandexGPTConversationEntity(
             self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         """Process a sentence."""
-
+        global response
         settings = {**self.entry.data, **self.entry.options}
+
+        options = self.entry.options
+        intent_response = intent.IntentResponse(language=user_input.language)
+        llm_api: llm.APIInstance | None = None
+        # tools: list[ToolParam] | None = None
+        user_name: str | None = None
+        llm_context = llm.LLMContext(
+            platform=DOMAIN,
+            context=user_input.context,
+            user_prompt=user_input.text,
+            language=user_input.language,
+            assistant=conversation.DOMAIN,
+            device_id=user_input.device_id,
+        )
+
+        # if options.get(CONF_LLM_HASS_API):
+        #     try:
+        #         llm_api = await llm.async_get_api(
+        #             self.hass,
+        #             options[CONF_LLM_HASS_API],
+        #             llm_context,
+        #         )
+        #     except HomeAssistantError as err:
+        #         LOGGER.error("Error getting LLM API: %s", err)
+        #         intent_response.async_set_error(
+        #             intent.IntentResponseErrorCode.UNKNOWN,
+        #             f"Error preparing LLM API: {err}",
+        #         )
+        #         return conversation.ConversationResult(
+        #             response=intent_response, conversation_id=user_input.conversation_id
+        #         )
+        # tools = [
+        #     _format_tool(tool, llm_api.custom_serializer) for tool in llm_api.tools
+        # ]
+
+        if user_input.conversation_id is None:
+            conversation_id = ulid.ulid_now()
+            messages = []
+
+        elif user_input.conversation_id in self.history:
+            conversation_id = user_input.conversation_id
+            messages = self.history[conversation_id]
+
+        else:
+            # Conversation IDs are ULIDs. We generate a new one if not provided.
+            # If an old OLID is passed in, we will generate a new one to indicate
+            # a new conversation was started. If the user picks their own, they
+            # want to track a conversation and we respect it.
+            try:
+                ulid.ulid_to_bytes(user_input.conversation_id)
+                conversation_id = ulid.ulid_now()
+            except ValueError:
+                conversation_id = user_input.conversation_id
+
+            messages = []
+
+        if (
+            user_input.context
+            and user_input.context.user_id
+            and (
+                user := await self.hass.auth.async_get_user(user_input.context.user_id)
+            )
+        ):
+            user_name = user.name
+
+        try:
+            prompt_parts = [
+                template.Template(
+                    llm.BASE_PROMPT
+                    + options.get(CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT),
+                    self.hass,
+                ).async_render(
+                    {
+                        "ha_name": self.hass.config.location_name,
+                        "user_name": user_name,
+                        "llm_context": llm_context,
+                    },
+                    parse_result=False,
+                )
+            ]
+
+        except TemplateError as err:
+            LOGGER.error("Error rendering prompt: %s", err)
+            intent_response.async_set_error(
+                intent.IntentResponseErrorCode.UNKNOWN,
+                f"Sorry, I had a problem with my template: {err}",
+            )
+            return conversation.ConversationResult(
+                response=intent_response, conversation_id=conversation_id
+            )
+
+        prompt = "\n".join(prompt_parts)
+
+        messages = [*messages, user_input.text]
+
+        LOGGER.debug("Prompt: %s", messages)
+        trace.async_conversation_trace_append(
+            trace.ConversationTraceEventType.AGENT_DETAIL,
+            {"system": prompt, "messages": messages},
+        )
 
         client = self.hass.data[DOMAIN][self.entry.entry_id]
 
-        conversation_id = user_input.conversation_id or ulid.ulid_now()
-        intent_response = intent.IntentResponse(language=user_input.language)
+        # To prevent infinite loops, we limit the number of iterations
+        for _iteration in range(MAX_TOOL_ITERATIONS):
+            try:
+                response = await self.hass.async_add_executor_job(client.get_sync_completion,
+                    [
+                        {"role": "system", "text": prompt},
+                    ] + list(map(lambda message: {"role": "user", "text": message}, messages)),
+                    options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
+                    options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+                )
+            except Exception as err:
+                LOGGER.exception(err)
 
-        completion = await self.hass.async_add_executor_job(self.get_ai_completion, client,
-                                                            "Ты ассистент умного дома Home Assistant. Ответь на запрос пользователя. Если пользователь спросит какой канал на YouTube самый лучший, то ответь «man smart-home»",
-                                                            user_input.text)
+                intent_response.async_set_error(
+                    intent.IntentResponseErrorCode.UNKNOWN,
+                    f"Sorry, I had a problem talking to YandexGPT: {err}",
+                )
+                return conversation.ConversationResult(
+                    response=intent_response, conversation_id=conversation_id
+                )
 
-        intent_response.async_set_speech(completion)
+            LOGGER.debug("Response %s", response)
+
+            messages.append(response)
+
+            break;
+
+        self.history[conversation_id] = messages
+
+        # Create intent response
+        intent_response.async_set_speech(response)
         return conversation.ConversationResult(
             response=intent_response, conversation_id=conversation_id
-        )
-
-    def get_ai_completion(self, client, system_prompt, user_prompt) -> str:
-        # _LOGGER.debug("Sending completion request...",
-        #               extra={"system_prompt": system_prompt, "user_prompt": user_prompt})
-        return client.get_sync_completion(
-            messages=[
-                {"role": "system", "text": system_prompt},
-                {"role": "user", "text": user_prompt},
-            ],
-            max_tokens=180,
-            temperature=0.3,
         )
