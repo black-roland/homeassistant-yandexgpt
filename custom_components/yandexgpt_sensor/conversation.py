@@ -1,19 +1,23 @@
 """The conversation platform for the YandexGPT integration."""
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 from __future__ import annotations
 
 from typing import Literal
 
 from homeassistant.components import conversation
+from homeassistant.components.conversation import trace
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import MATCH_ALL, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, TemplateError
 from homeassistant.helpers import intent, llm
+from homeassistant.helpers import template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
-from homeassistant.helpers import template
-from homeassistant.components.conversation import trace
 
 from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
     RECOMMENDED_MAX_TOKENS
@@ -48,7 +52,6 @@ class YandexGPTConversationEntity(
             self._attr_supported_features = (
                 conversation.ConversationEntityFeature.CONTROL
             )
-
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
@@ -119,11 +122,11 @@ class YandexGPTConversationEntity(
             messages = []
 
         if (
-            user_input.context
-            and user_input.context.user_id
-            and (
+                user_input.context
+                and user_input.context.user_id
+                and (
                 user := await self.hass.auth.async_get_user(user_input.context.user_id)
-            )
+        )
         ):
             user_name = user.name
 
@@ -175,11 +178,15 @@ class YandexGPTConversationEntity(
         # To prevent infinite loops, we limit the number of iterations
         for _iteration in range(MAX_TOOL_ITERATIONS):
             try:
-                response = await self.hass.async_add_executor_job(client.get_sync_completion,
+                response = await self.hass.async_add_executor_job(
+                    client.get_sync_completion,
                     [
                         {"role": "system", "text": prompt},
-                    ] + list(map(lambda message: {"role": "user", "text": message}, messages)),
-                    options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
+                    ] + list(map(lambda message: {"role": "user",
+                                                  "text": message},
+                                 messages)),
+                    options.get(CONF_TEMPERATURE,
+                                RECOMMENDED_TEMPERATURE),
                     options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
                 )
             except Exception as err:

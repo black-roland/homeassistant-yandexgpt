@@ -1,5 +1,9 @@
 """Config flow for YandexGPT integration."""
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 from __future__ import annotations
 
 import logging
@@ -14,7 +18,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig, \
     SelectSelector, SelectSelectorConfig
@@ -80,7 +83,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(
-        config_entry: ConfigEntry,
+            config_entry: ConfigEntry,
     ) -> OptionsFlow:
         """Create the options flow."""
         return YandexGPTOptionsFlow(config_entry)
@@ -97,7 +100,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
         )
 
     async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
+            self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
         options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
@@ -130,8 +133,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
 
 def yandexgpt_config_option_schema(
-    hass: HomeAssistant,
-    options: dict[str, Any] | MappingProxyType[str, Any],
+        hass: HomeAssistant,
+        options: dict[str, Any] | MappingProxyType[str, Any],
 ) -> dict:
     """Return a schema for YandexGPT completion options."""
     hass_apis: list[SelectOptionDict] = [
