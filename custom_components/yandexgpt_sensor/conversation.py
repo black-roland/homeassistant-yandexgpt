@@ -44,6 +44,11 @@ class YandexGPTConversationEntity(
         self.entry = entry
         # FIXME: user YandexGPTMessage type instead of string
         self.history: dict[str, list[str]] = {}
+        if self.entry.options.get(CONF_LLM_HASS_API):
+            self._attr_supported_features = (
+                conversation.ConversationEntityFeature.CONTROL
+            )
+
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
@@ -54,6 +59,7 @@ class YandexGPTConversationEntity(
             self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         """Process a sentence."""
+        # FIXME: Clean up
         global response
         settings = {**self.entry.data, **self.entry.options}
 
@@ -71,25 +77,25 @@ class YandexGPTConversationEntity(
             device_id=user_input.device_id,
         )
 
-        # if options.get(CONF_LLM_HASS_API):
-        #     try:
-        #         llm_api = await llm.async_get_api(
-        #             self.hass,
-        #             options[CONF_LLM_HASS_API],
-        #             llm_context,
-        #         )
-        #     except HomeAssistantError as err:
-        #         LOGGER.error("Error getting LLM API: %s", err)
-        #         intent_response.async_set_error(
-        #             intent.IntentResponseErrorCode.UNKNOWN,
-        #             f"Error preparing LLM API: {err}",
-        #         )
-        #         return conversation.ConversationResult(
-        #             response=intent_response, conversation_id=user_input.conversation_id
-        #         )
-        # tools = [
-        #     _format_tool(tool, llm_api.custom_serializer) for tool in llm_api.tools
-        # ]
+        if settings.get(CONF_LLM_HASS_API):
+            try:
+                llm_api = await llm.async_get_api(
+                    self.hass,
+                    settings[CONF_LLM_HASS_API],
+                    llm_context,
+                )
+            except HomeAssistantError as err:
+                LOGGER.error("Error getting LLM API: %s", err)
+                intent_response.async_set_error(
+                    intent.IntentResponseErrorCode.UNKNOWN,
+                    f"Error preparing LLM API: {err}",
+                )
+                return conversation.ConversationResult(
+                    response=intent_response, conversation_id=user_input.conversation_id
+                )
+            # tools = [
+            #     _format_tool(tool, llm_api.custom_serializer) for tool in llm_api.tools
+            # ]
 
         if user_input.conversation_id is None:
             conversation_id = ulid.ulid_now()
@@ -122,6 +128,7 @@ class YandexGPTConversationEntity(
             user_name = user.name
 
         try:
+            # FIXME: Replace BASE_PROMPT and DEFAULT_INSTRUCTIONS_PROMPT with Russian alternatives
             prompt_parts = [
                 template.Template(
                     llm.BASE_PROMPT
@@ -146,6 +153,12 @@ class YandexGPTConversationEntity(
             return conversation.ConversationResult(
                 response=intent_response, conversation_id=conversation_id
             )
+
+        LOGGER.debug(llm_api)
+
+        if llm_api:
+            LOGGER.debug(llm_api.api_prompt)
+            prompt_parts.append(llm_api.api_prompt)
 
         prompt = "\n".join(prompt_parts)
 

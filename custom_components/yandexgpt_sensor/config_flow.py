@@ -12,10 +12,12 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow, ConfigEntry,
 )
+from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import llm
-from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig
+from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig, \
+    SelectSelector, SelectSelectorConfig
 
 from .const import (
     DOMAIN,
@@ -132,22 +134,25 @@ def yandexgpt_config_option_schema(
     options: dict[str, Any] | MappingProxyType[str, Any],
 ) -> dict:
     """Return a schema for YandexGPT completion options."""
-    # hass_apis: list[SelectOptionDict] = [
-    #     SelectOptionDict(
-    #         label="No control",
-    #         value="none",
-    #     )
-    # ]
-    # hass_apis.extend(
-    #     SelectOptionDict(
-    #         label=api.name,
-    #         value=api.id,
-    #     )
-    #     for api in llm.async_get_apis(hass)
-    # )
+    hass_apis: list[SelectOptionDict] = [
+        SelectOptionDict(
+            label="No control",
+            value="none",
+        )
+    ]
+    hass_apis.extend(
+        SelectOptionDict(
+            label=api.name,
+            value=api.id,
+        )
+        for api in llm.async_get_apis(hass)
+    )
 
     schema = {
         vol.Optional(CONF_PROMPT): TemplateSelector(),
+        vol.Optional(CONF_LLM_HASS_API, default="none"): SelectSelector(
+            SelectSelectorConfig(options=hass_apis)
+        ),
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
         ): bool,
