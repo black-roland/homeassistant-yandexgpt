@@ -1,18 +1,14 @@
 """The YandexGPT integration."""
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 from __future__ import annotations
 
-import asyncio
-import logging
-
-import httpx
-
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import config_validation as cv
-from homeassistant.util.ssl import get_default_context
 from yandex_gpt import YandexGPTConfigManagerForAPIKey, YandexGPT
 
 from .const import (
@@ -41,9 +37,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(_hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload YandexGPT."""
-    # if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-    #     return False
-    # hass.data[DOMAIN].pop(entry.entry_id)
-    return True
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
