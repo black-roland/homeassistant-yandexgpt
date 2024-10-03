@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Callable, Any
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import trace
@@ -62,14 +62,11 @@ class YandexGPTConversationEntity(
             self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         """Process a sentence."""
-        # FIXME: Clean up
-        global response
         settings = {**self.entry.data, **self.entry.options}
 
         options = self.entry.options
         intent_response = intent.IntentResponse(language=user_input.language)
         llm_api: llm.APIInstance | None = None
-        # tools: list[ToolParam] | None = None
         user_name: str | None = None
         llm_context = llm.LLMContext(
             platform=DOMAIN,
@@ -96,9 +93,6 @@ class YandexGPTConversationEntity(
                 return conversation.ConversationResult(
                     response=intent_response, conversation_id=user_input.conversation_id
                 )
-            # tools = [
-            #     _format_tool(tool, llm_api.custom_serializer) for tool in llm_api.tools
-            # ]
 
         if user_input.conversation_id is None:
             conversation_id = ulid.ulid_now()
@@ -157,8 +151,6 @@ class YandexGPTConversationEntity(
                 response=intent_response, conversation_id=conversation_id
             )
 
-        LOGGER.debug(llm_api)
-
         if llm_api:
             LOGGER.debug(llm_api.api_prompt)
             prompt_parts.append(llm_api.api_prompt)
@@ -176,35 +168,32 @@ class YandexGPTConversationEntity(
         client = self.hass.data[DOMAIN][self.entry.entry_id]
 
         # To prevent infinite loops, we limit the number of iterations
-        for _iteration in range(MAX_TOOL_ITERATIONS):
-            try:
-                response = await self.hass.async_add_executor_job(
-                    client.get_sync_completion,
-                    [
-                        {"role": "system", "text": prompt},
-                    ] + list(map(lambda message: {"role": "user",
-                                                  "text": message},
-                                 messages)),
-                    options.get(CONF_TEMPERATURE,
-                                RECOMMENDED_TEMPERATURE),
-                    options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
-                )
-            except Exception as err:
-                LOGGER.exception(err)
+        try:
+            response = await self.hass.async_add_executor_job(
+                client.get_sync_completion,
+                [
+                    {"role": "system", "text": prompt},
+                ] + list(map(lambda message: {"role": "user",
+                                              "text": message},
+                             messages)),
+                options.get(CONF_TEMPERATURE,
+                            RECOMMENDED_TEMPERATURE),
+                options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+            )
+        except Exception as err:
+            LOGGER.exception(err)
 
-                intent_response.async_set_error(
-                    intent.IntentResponseErrorCode.UNKNOWN,
-                    f"Sorry, I had a problem talking to YandexGPT: {err}",
-                )
-                return conversation.ConversationResult(
-                    response=intent_response, conversation_id=conversation_id
-                )
+            intent_response.async_set_error(
+                intent.IntentResponseErrorCode.UNKNOWN,
+                f"Sorry, I had a problem talking to YandexGPT: {err}",
+            )
+            return conversation.ConversationResult(
+                response=intent_response, conversation_id=conversation_id
+            )
 
-            LOGGER.debug("Response %s", response)
+        LOGGER.debug("Response %s", response)
 
-            messages.append(response)
-
-            break;
+        messages.append(response)
 
         self.history[conversation_id] = messages
 

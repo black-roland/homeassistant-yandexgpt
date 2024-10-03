@@ -8,5 +8,6 @@
   "documentation": "",
   "iot_class": "cloud_polling",
   "loggers": ["yandexgpt_sensor"],
+  "integration_type": "service",
   "requirements": ["yandexgpt-python"]
 }
