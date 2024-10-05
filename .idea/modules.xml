@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/homeassistant-ai-sensor.iml" filepath="$PROJECT_DIR$/.idea/homeassistant-ai-sensor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/homeassistant-yandexgpt.iml" filepath="$PROJECT_DIR$/.idea/homeassistant-yandexgpt.iml" />
     </modules>
   </component>
 </project>

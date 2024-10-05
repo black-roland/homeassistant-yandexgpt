@@ -14,7 +14,7 @@ from yandex_gpt import YandexGPTConfigManagerForAPIKey, YandexGPT
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_API_KEY
 from homeassistant.core import HomeAssistant, SupportsResponse, ServiceCall, ServiceResponse
 from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.helpers.typing import ConfigType
@@ -22,7 +22,6 @@ from homeassistant.helpers.typing import ConfigType
 from .const import (
     DOMAIN,
     CONF_CATALOG_ID,
-    CONF_API_KEY,
     CONF_MODEL_TYPE, LOGGER,
 )
 
@@ -31,7 +30,6 @@ PLATFORMS = (Platform.CONVERSATION,)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-
     def write_image_to_file(base64_img):
         file_name = "/tmp/1.jpg"
         with open(file_name, "wb") as file:
@@ -71,7 +69,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         operation_id = None
 
         async with aiohttp.ClientSession() as session:
-            async with session.post("https://llm.api.cloud.yandex.net/foundationModels/v1/imageGenerationAsync", headers=headers, json=payload) as resp:
+            async with session.post("https://llm.api.cloud.yandex.net/foundationModels/v1/imageGenerationAsync",
+                                    headers=headers, json=payload) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     LOGGER.debug(data)
@@ -90,7 +89,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                     if asyncio.get_event_loop().time() > end_time:
                         raise TimeoutError(f"Operation timed out after 30 seconds")
                     # Polling the operation
-                    async with session.get(f"https://llm.api.cloud.yandex.net/operations/{operation_id}", headers=headers) as resp:
+                    async with session.get(f"https://llm.api.cloud.yandex.net/operations/{operation_id}",
+                                           headers=headers) as resp:
                         # If the request was successful, return the completion result
                         # Otherwise, raise an exception
                         if resp.status == 200:

@@ -16,7 +16,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow, ConfigEntry,
 )
-from homeassistant.const import CONF_LLM_HASS_API
+from homeassistant.const import CONF_LLM_HASS_API, CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig, \
@@ -25,14 +25,13 @@ from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, N
 from .const import (
     DOMAIN,
     CONF_CATALOG_ID,
-    CONF_API_KEY,
     CONF_MODEL_TYPE, CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
     RECOMMENDED_TEMPERATURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_API_DATA_SCHEMA = vol.Schema(
+STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_CATALOG_ID): str,
         vol.Required(CONF_API_KEY): str,
@@ -66,7 +65,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_form(
                 step_id="user",
-                data_schema=STEP_API_DATA_SCHEMA,
+                data_schema=STEP_USER_DATA_SCHEMA,
                 # errors=errors,
             )
 
