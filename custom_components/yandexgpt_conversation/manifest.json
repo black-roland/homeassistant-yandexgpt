@@ -1,0 +1,14 @@
+{
+  "domain": "yandexgpt_conversation",
+  "name": "YandexGPT",
+  "version": "0.1.0",
+  "after_dependencies": ["assist_pipeline", "intent"],
+  "codeowners": ["@black-roland"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
+  "documentation": "https://github.com/black-roland/homeassistant-yandexgpt#readme",
+  "loggers": ["yandexgpt_conversation"],
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": ["yandexgpt-python"]
+}

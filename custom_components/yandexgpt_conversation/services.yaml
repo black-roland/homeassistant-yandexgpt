@@ -4,7 +4,7 @@ generate_image:
       required: true
       selector:
         config_entry:
-          integration: yandexgpt_sensor
+          integration: yandexgpt_conversation
     prompt:
       required: true
       selector:
