@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Callable, Any
+from typing import Literal
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import trace
@@ -18,6 +18,8 @@ from homeassistant.helpers import intent, llm
 from homeassistant.helpers import template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
+from yandex_cloud_ml_sdk import YCloudML
+from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
     RECOMMENDED_MAX_TOKENS
@@ -46,7 +48,8 @@ class YandexGPTConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = entry
-        # FIXME: user YandexGPTMessage type instead of string
+        # FIXME: use proper type (TextMessage) instead of string
+        # https://github.com/yandex-cloud/yandex-cloud-ml-sdk/blob/master/examples/async/completions/chat.py#L16
         self.history: dict[str, list[str]] = {}
         if self.entry.options.get(CONF_LLM_HASS_API):
             self._attr_supported_features = (
@@ -152,7 +155,6 @@ class YandexGPTConversationEntity(
             )
 
         if llm_api:
-            LOGGER.debug(llm_api.api_prompt)
             prompt_parts.append(llm_api.api_prompt)
 
         prompt = "\n".join(prompt_parts)
@@ -165,20 +167,25 @@ class YandexGPTConversationEntity(
             {"system": prompt, "messages": messages},
         )
 
-        client = self.hass.data[DOMAIN][self.entry.entry_id]
+        client: YCloudML = self.hass.data[DOMAIN][self.entry.entry_id]
+
+        model_config = {
+            "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
+            "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+        }
+
+        request_messages: list[dict[str, str] | str] = [{"role": "system", "text": prompt}]
 
         # To prevent infinite loops, we limit the number of iterations
         try:
-            response = await self.hass.async_add_executor_job(
-                client.get_sync_completion,
-                [
-                    {"role": "system", "text": prompt},
-                ] + list(map(lambda message: {"role": "user",
-                                              "text": message},
-                             messages)),
-                options.get(CONF_TEMPERATURE,
-                            RECOMMENDED_TEMPERATURE),
-                options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+            # TODO: select model here
+            result = await self.hass.async_add_executor_job(
+                client.models
+                .completions('yandexgpt-lite')
+                .configure(**model_config)
+                .run,
+                [TextMessage(role="system", text=prompt)] +
+                list(map(lambda message: TextMessage(role="user", text=message), messages))
             )
         except Exception as err:
             LOGGER.exception(err)
@@ -191,14 +198,14 @@ class YandexGPTConversationEntity(
                 response=intent_response, conversation_id=conversation_id
             )
 
-        LOGGER.debug("Response %s", response)
+        LOGGER.debug("Response %s", result)
 
-        messages.append(response)
+        messages.append(result[0].text)
 
         self.history[conversation_id] = messages
 
         # Create intent response
-        intent_response.async_set_speech(response)
+        intent_response.async_set_speech(result[0].text)
         return conversation.ConversationResult(
             response=intent_response, conversation_id=conversation_id
         )

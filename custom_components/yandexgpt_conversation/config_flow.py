@@ -24,8 +24,8 @@ from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, N
 
 from .const import (
     DOMAIN,
-    CONF_CATALOG_ID,
-    CONF_MODEL_TYPE, CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
+    CONF_FOLDER_ID,
+    CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
     RECOMMENDED_TEMPERATURE,
 )
 
@@ -33,9 +33,9 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_CATALOG_ID): str,
+        vol.Required(CONF_FOLDER_ID): str,
         vol.Required(CONF_API_KEY): str,
-        vol.Required(CONF_MODEL_TYPE): str,
+        # vol.Required(CONF_MODEL_TYPE): str,
     }
 )
 
@@ -55,7 +55,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self.catalog_id: str | None = None
         self.api_key: str | None = None
-        self.model_type: str | None = None
+        # self.model_type: str | None = None
 
     async def async_step_user(
             self, user_input: dict[str, Any] | None = None
@@ -106,6 +106,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
         if user_input is not None:
             if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
+                if user_input[CONF_LLM_HASS_API] == "none":
+                    user_input.pop(CONF_LLM_HASS_API)
                 return self.async_create_entry(title="", data=user_input)
 
             # Re-render the options again, now with the recommended options shown/hidden

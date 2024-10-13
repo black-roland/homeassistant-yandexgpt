@@ -9,21 +9,16 @@ from __future__ import annotations
 import asyncio
 import base64
 
-from async_upnp_client import aiohttp
-from yandex_gpt import YandexGPTConfigManagerForAPIKey, YandexGPT
 import voluptuous as vol
-
+from async_upnp_client import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_API_KEY
 from homeassistant.core import HomeAssistant, SupportsResponse, ServiceCall, ServiceResponse
 from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.helpers.typing import ConfigType
+from yandex_cloud_ml_sdk import YCloudML
 
-from .const import (
-    DOMAIN,
-    CONF_CATALOG_ID,
-    CONF_MODEL_TYPE, LOGGER,
-)
+from .const import DOMAIN, CONF_FOLDER_ID, LOGGER
 
 SERVICE_GENERATE_IMAGE = "generate_image"
 PLATFORMS = (Platform.CONVERSATION,)
@@ -45,7 +40,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         settings = entry.runtime_data
 
         payload = {
-            "modelUri": f"art://{settings[CONF_CATALOG_ID]}/yandex-art/latest",
+            "modelUri": f"art://{settings[CONF_FOLDER_ID]}/yandex-art/latest",
             "generationOptions": {
                 "seed": "1863",
                 "aspectRatio": {
@@ -130,14 +125,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up YandexGPT from a config entry."""
     settings = {**entry.data, **entry.options}
 
-    yandexgpt_config = YandexGPTConfigManagerForAPIKey(model_type=settings[CONF_MODEL_TYPE],
-                                                       catalog_id=settings[CONF_CATALOG_ID],
-                                                       api_key=settings[CONF_API_KEY])
+    yandexgpt_sdk = YCloudML(folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY])
 
-    yandexgpt = YandexGPT(config_manager=yandexgpt_config)
-
-    entry.runtime_data = {"catalog_id": settings[CONF_CATALOG_ID], "api_key": settings[CONF_API_KEY]}
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = yandexgpt
+    # FIXME: Clean up YandexART code
+    entry.runtime_data = {"catalog_id": settings[CONF_FOLDER_ID], "api_key": settings[CONF_API_KEY]}
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = yandexgpt_sdk
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

@@ -10,5 +10,5 @@
   "loggers": ["yandexgpt_conversation"],
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "requirements": ["yandexgpt-python"]
+  "requirements": ["yandex-cloud-ml-sdk"]
 }
