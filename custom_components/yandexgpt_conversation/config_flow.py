@@ -20,13 +20,13 @@ from homeassistant.const import CONF_LLM_HASS_API, CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig, \
-    SelectSelector, SelectSelectorConfig
+    SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
 from .const import (
     DOMAIN,
     CONF_FOLDER_ID,
     CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
-    RECOMMENDED_TEMPERATURE,
+    RECOMMENDED_TEMPERATURE, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,29 +55,22 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self.catalog_id: str | None = None
         self.api_key: str | None = None
-        # self.model_type: str | None = None
 
     async def async_step_user(
             self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
 
-        if user_input is None:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=STEP_USER_DATA_SCHEMA,
-                # errors=errors,
+        if user_input is not None:
+            # TODO: Validate input
+            return self.async_create_entry(
+                title="YandexGPT",
+                data=user_input,
+                options=RECOMMENDED_OPTIONS,
             )
 
-        user_input = user_input or {}
-
-        # errors: dict[str, str] = {}
-
-        # TODO: Validate input
-
-        return self.async_create_entry(
-            title="YandexGPT",
-            data=user_input,
+        return self.async_show_form(
+            step_id="user", data_schema=STEP_USER_DATA_SCHEMA,
         )
 
     @staticmethod
@@ -94,9 +87,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self.last_rendered_recommended = config_entry.options.get(
-            CONF_RECOMMENDED, False
-        )
+        self.last_rendered_recommended = config_entry.options.get(CONF_RECOMMENDED, False)
 
     async def async_step_init(
             self, user_input: dict[str, Any] | None = None
@@ -165,20 +156,30 @@ def yandexgpt_config_option_schema(
     if options.get(CONF_RECOMMENDED):
         return schema
 
+    models = [
+        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
+        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt"),
+    ]
+
     schema.update(
         {
-            # vol.Optional(
-            #     CONF_CHAT_MODEL,
-            #     default=RECOMMENDED_CHAT_MODEL,
-            # ): str,
             vol.Optional(
-                CONF_MAX_TOKENS,
-                default=RECOMMENDED_MAX_TOKENS,
-            ): int,
+                CONF_CHAT_MODEL,
+                description={"suggested_value": options.get(CONF_CHAT_MODEL)},
+                default=RECOMMENDED_CHAT_MODEL,
+            ): SelectSelector(
+                SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=models)
+            ),
             vol.Optional(
                 CONF_TEMPERATURE,
+                description={"suggested_value": options.get(CONF_TEMPERATURE)},
                 default=RECOMMENDED_TEMPERATURE,
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
+            vol.Optional(
+                CONF_MAX_TOKENS,
+                description={"suggested_value": options.get(CONF_MAX_TOKENS)},
+                default=RECOMMENDED_MAX_TOKENS,
+            ): int,
         }
     )
     return schema

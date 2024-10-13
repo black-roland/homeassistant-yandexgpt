@@ -14,15 +14,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import MATCH_ALL, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, TemplateError
-from homeassistant.helpers import intent, llm
-from homeassistant.helpers import template
+from homeassistant.helpers import intent, llm, template, device_registry as dr
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
 from yandex_cloud_ml_sdk import YCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
-    RECOMMENDED_MAX_TOKENS
+    RECOMMENDED_MAX_TOKENS, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL
 
 # Max number of back and forth with the LLM to generate a response
 MAX_TOOL_ITERATIONS = 10
@@ -44,6 +43,7 @@ class YandexGPTConversationEntity(
     """YandexGPT conversation agent."""
 
     _attr_has_entity_name = True
+    _attr_name = None
 
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
@@ -51,6 +51,13 @@ class YandexGPTConversationEntity(
         # FIXME: use proper type (TextMessage) instead of string
         # https://github.com/yandex-cloud/yandex-cloud-ml-sdk/blob/master/examples/async/completions/chat.py#L16
         self.history: dict[str, list[str]] = {}
+        self._attr_unique_id = entry.entry_id
+        self._attr_device_info = dr.DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            manufacturer="Yandex",
+            model="YandexGPT",
+            entry_type=dr.DeviceEntryType.SERVICE,
+        )
         if self.entry.options.get(CONF_LLM_HASS_API):
             self._attr_supported_features = (
                 conversation.ConversationEntityFeature.CONTROL
@@ -167,7 +174,7 @@ class YandexGPTConversationEntity(
             {"system": prompt, "messages": messages},
         )
 
-        client: YCloudML = self.hass.data[DOMAIN][self.entry.entry_id]
+        client: YCloudML = self.entry.runtime_data["client"]
 
         model_config = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
@@ -178,10 +185,9 @@ class YandexGPTConversationEntity(
 
         # To prevent infinite loops, we limit the number of iterations
         try:
-            # TODO: select model here
             result = await self.hass.async_add_executor_job(
                 client.models
-                .completions('yandexgpt-lite')
+                .completions(options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL))
                 .configure(**model_config)
                 .run,
                 [TextMessage(role="system", text=prompt)] +

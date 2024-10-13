@@ -127,9 +127,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     yandexgpt_sdk = YCloudML(folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY])
 
-    # FIXME: Clean up YandexART code
-    entry.runtime_data = {"catalog_id": settings[CONF_FOLDER_ID], "api_key": settings[CONF_API_KEY]}
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = yandexgpt_sdk
+    entry.runtime_data = {
+        "client": yandexgpt_sdk,
+        # FIXME: Clean up YandexART code
+        "catalog_id": settings[CONF_FOLDER_ID],
+        "api_key": settings[CONF_API_KEY],
+    }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
