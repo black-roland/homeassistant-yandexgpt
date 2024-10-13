@@ -21,7 +21,7 @@ from yandex_cloud_ml_sdk import YCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
-    RECOMMENDED_MAX_TOKENS, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL
+    RECOMMENDED_MAX_TOKENS, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL, BASE_PROMPT_RU, DEFAULT_INSTRUCTIONS_PROMPT_RU
 
 # Max number of back and forth with the LLM to generate a response
 MAX_TOOL_ITERATIONS = 10
@@ -135,11 +135,9 @@ class YandexGPTConversationEntity(
             user_name = user.name
 
         try:
-            # FIXME: Replace BASE_PROMPT and DEFAULT_INSTRUCTIONS_PROMPT with Russian alternatives
             prompt_parts = [
                 template.Template(
-                    llm.BASE_PROMPT
-                    + options.get(CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT),
+                    BASE_PROMPT_RU + options.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
                     self.hass,
                 ).async_render(
                     {

@@ -26,7 +26,7 @@ from .const import (
     DOMAIN,
     CONF_FOLDER_ID,
     CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
-    RECOMMENDED_TEMPERATURE, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL,
+    RECOMMENDED_TEMPERATURE, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL, DEFAULT_INSTRUCTIONS_PROMPT_RU,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 RECOMMENDED_OPTIONS = {
     CONF_RECOMMENDED: True,
-    CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,
+    CONF_PROMPT: DEFAULT_INSTRUCTIONS_PROMPT_RU,
 }
 
 
@@ -111,7 +111,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
         suggested_values = options.copy()
         if not suggested_values.get(CONF_PROMPT):
-            suggested_values[CONF_PROMPT] = llm.DEFAULT_INSTRUCTIONS_PROMPT
+            suggested_values[CONF_PROMPT] = DEFAULT_INSTRUCTIONS_PROMPT_RU
 
         schema = self.add_suggested_values_to_schema(
             vol.Schema(yandexgpt_config_option_schema(self.hass, options)),

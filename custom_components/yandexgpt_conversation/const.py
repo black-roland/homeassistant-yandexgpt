@@ -20,3 +20,12 @@ RECOMMENDED_TEMPERATURE = 0.3
 
 CONF_CHAT_MODEL = "chat_model"
 RECOMMENDED_CHAT_MODEL = "yandexgpt-lite"
+
+BASE_PROMPT_RU = (
+    'Текущее время: {{ now().strftime("%H:%M:%S") }}. '
+    'Текущая дата: {{ now().strftime("%Y-%m-%d") }}.\n'
+)
+DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистент для Home Assistant.
+Отвечай на вопросы правдиво.
+Отвечай простым текстом, без вводных фраз и объяснений. Не усложняй и отвечай по сути.
+"""
