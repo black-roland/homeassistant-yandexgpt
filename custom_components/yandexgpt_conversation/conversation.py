@@ -48,9 +48,7 @@ class YandexGPTConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = entry
-        # FIXME: use proper type (TextMessage) instead of string
-        # https://github.com/yandex-cloud/yandex-cloud-ml-sdk/blob/master/examples/async/completions/chat.py#L16
-        self.history: dict[str, list[str]] = {}
+        self.history: dict[str, list[TextMessage]] = {}
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
@@ -148,7 +146,6 @@ class YandexGPTConversationEntity(
                     parse_result=False,
                 )
             ]
-
         except TemplateError as err:
             LOGGER.error("Error rendering prompt: %s", err)
             intent_response.async_set_error(
@@ -164,12 +161,15 @@ class YandexGPTConversationEntity(
 
         prompt = "\n".join(prompt_parts)
 
-        messages = [*messages, user_input.text]
+        messages = [
+            TextMessage(role="system", text=prompt),
+            *messages[1:],
+            TextMessage(role="user", text=user_input.text),
+        ]
 
         LOGGER.debug("Prompt: %s", messages)
         trace.async_conversation_trace_append(
-            trace.ConversationTraceEventType.AGENT_DETAIL,
-            {"system": prompt, "messages": messages},
+            trace.ConversationTraceEventType.AGENT_DETAIL, {"messages": messages},
         )
 
         client: YCloudML = self.entry.runtime_data["client"]
@@ -179,8 +179,6 @@ class YandexGPTConversationEntity(
             "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
-        request_messages: list[dict[str, str] | str] = [{"role": "system", "text": prompt}]
-
         # To prevent infinite loops, we limit the number of iterations
         try:
             result = await self.hass.async_add_executor_job(
@@ -188,8 +186,7 @@ class YandexGPTConversationEntity(
                 .completions(options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL))
                 .configure(**model_config)
                 .run,
-                [TextMessage(role="system", text=prompt)] +
-                list(map(lambda message: TextMessage(role="user", text=message), messages))
+                messages
             )
         except Exception as err:
             LOGGER.exception(err)
@@ -204,8 +201,7 @@ class YandexGPTConversationEntity(
 
         LOGGER.debug("Response %s", result)
 
-        messages.append(result[0].text)
-
+        messages.append(TextMessage(role=result[0].role, text=result[0].text))
         self.history[conversation_id] = messages
 
         # Create intent response
