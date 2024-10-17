@@ -25,27 +25,27 @@ PLATFORMS = (Platform.CONVERSATION,)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    def write_image_to_file(base64_img):
-        file_name = "/tmp/1.jpg"
+    def write_image_to_file(base64_img, file_name):
         with open(file_name, "wb") as file:
             file.write(base64.b64decode(base64_img))
         return file_name
 
+    # FIXME: Needs refactoring
     async def render_image(call: ServiceCall) -> ServiceResponse:
         """Render an image with YandexART."""
 
         entry_id = call.data["config_entry"]
         entry = hass.config_entries.async_get_entry(entry_id)
 
-        settings = entry.runtime_data
+        settings = {**entry.data, **entry.options}
 
         payload = {
             "modelUri": f"art://{settings[CONF_FOLDER_ID]}/yandex-art/latest",
             "generationOptions": {
-                "seed": "1863",
+                "seed": call.data["seed"],
                 "aspectRatio": {
-                    "widthRatio": "4",
-                    "heightRatio": "3",
+                    "widthRatio": "16",
+                    "heightRatio": "9",
                 },
             },
             "messages": [
@@ -68,11 +68,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                                     headers=headers, json=payload) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    LOGGER.debug(data)
                     operation_id = data["id"]
                 else:
                     data = await resp.text()
-                    LOGGER.debug(data)
                     raise Exception(f"Failed to send async request, status code: {resp.status}")
 
             base64_img = None
@@ -97,7 +95,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                             raise Exception(f"Failed to poll operation status, status code: {resp.status}")
                     await asyncio.sleep(1)
 
-            file_name = await hass.async_add_executor_job(write_image_to_file, base64_img)
+            file_name = await hass.async_add_executor_job(write_image_to_file, base64_img, call.data["file_name"])
 
             return {"file_name": file_name}
 
@@ -112,7 +110,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                         "integration": DOMAIN,
                     }
                 ),
+                vol.Required("seed"): vol.All(
+                    vol.Coerce(int), vol.Clamp(min=0)
+                ),
                 vol.Required("prompt"): cv.string,
+                vol.Required("file_name"): cv.path,
             }
         ),
         supports_response=SupportsResponse.ONLY,
@@ -127,12 +129,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     yandexgpt_sdk = YCloudML(folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY])
 
-    entry.runtime_data = {
-        "client": yandexgpt_sdk,
-        # FIXME: Clean up YandexART code
-        "catalog_id": settings[CONF_FOLDER_ID],
-        "api_key": settings[CONF_API_KEY],
-    }
+    entry.runtime_data = yandexgpt_sdk
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

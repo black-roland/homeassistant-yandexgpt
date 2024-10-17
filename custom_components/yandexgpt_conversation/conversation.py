@@ -172,7 +172,7 @@ class YandexGPTConversationEntity(
             trace.ConversationTraceEventType.AGENT_DETAIL, {"messages": messages},
         )
 
-        client: YCloudML = self.entry.runtime_data["client"]
+        client: YCloudML = self.entry.runtime_data
 
         model_config = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),

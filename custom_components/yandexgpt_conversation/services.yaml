@@ -5,8 +5,19 @@ generate_image:
       selector:
         config_entry:
           integration: yandexgpt_conversation
+    seed:
+      required: true
+      example: "{{ (now() | as_timestamp * 1000000) | round }}"
+      selector:
+        number:
+          min: 0
     prompt:
       required: true
       selector:
         text:
           multiline: true
+    file_name:
+      required: true
+      example: "/tmp/yandexart_{{ (now() | as_timestamp * 1000000) | round }}.jpg"
+      selector:
+        text:
