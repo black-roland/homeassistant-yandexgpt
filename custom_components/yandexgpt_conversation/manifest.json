@@ -1,7 +1,7 @@
 {
   "domain": "yandexgpt_conversation",
   "name": "YandexGPT",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "after_dependencies": ["assist_pipeline", "intent"],
   "codeowners": ["@black-roland"],
   "config_flow": true,
