@@ -6,7 +6,7 @@
   "codeowners": ["@black-roland"],
   "config_flow": true,
   "dependencies": ["conversation"],
-  "documentation": "https://github.com/black-roland/homeassistant-yandexgpt#readme",
+  "documentation": "https://github.com/black-roland/homeassistant-yandexgpt/wiki",
   "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
   "loggers": ["yandexgpt_conversation"],
   "integration_type": "service",

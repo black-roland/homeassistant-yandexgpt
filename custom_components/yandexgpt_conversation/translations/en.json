@@ -1,0 +1,29 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "folder_id": "Folder ID",
+          "api_key": "API key"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "prompt": "Instructions",
+          "llm_hass_api": "Control Home Assistant",
+          "recommended": "Recommended model settings",
+          "chat_model": "Model",
+          "temperature": "Temperature",
+          "max_tokens": "Maximum tokens to return in response"
+        },
+        "data_description": {
+          "prompt": "Instruct how the LLM should respond. This can be a template."
+        }
+      }
+    }
+  }
+}
