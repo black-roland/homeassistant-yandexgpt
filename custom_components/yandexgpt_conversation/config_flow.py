@@ -157,8 +157,8 @@ def yandexgpt_config_option_schema(
         return schema
 
     models = [
-        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
         SelectOptionDict(label="YandexGPT Pro", value="yandexgpt"),
+        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
     ]
 
     schema.update(
