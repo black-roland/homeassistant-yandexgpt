@@ -18,7 +18,7 @@ from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.helpers.typing import ConfigType
 from yandex_cloud_ml_sdk import YCloudML
 
-from .const import DOMAIN, CONF_FOLDER_ID, LOGGER
+from .const import DOMAIN, CONF_FOLDER_ID
 
 SERVICE_GENERATE_IMAGE = "generate_image"
 PLATFORMS = (Platform.CONVERSATION,)
@@ -80,7 +80,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 while True:
                     # Check if the operation has timed out and if so, raise an exception
                     if asyncio.get_event_loop().time() > end_time:
-                        raise TimeoutError(f"Operation timed out after 30 seconds")
+                        raise TimeoutError("Operation timed out after 30 seconds")
                     # Polling the operation
                     async with session.get(f"https://llm.api.cloud.yandex.net/operations/{operation_id}",
                                            headers=headers) as resp:

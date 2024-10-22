@@ -14,19 +14,34 @@ import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow, ConfigEntry,
+    OptionsFlow,
+    ConfigEntry,
 )
 from homeassistant.const import CONF_LLM_HASS_API, CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
-from homeassistant.helpers.selector import SelectOptionDict, TemplateSelector, NumberSelector, NumberSelectorConfig, \
-    SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    TemplateSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
     DOMAIN,
     CONF_FOLDER_ID,
-    CONF_PROMPT, CONF_RECOMMENDED, CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS, CONF_TEMPERATURE,
-    RECOMMENDED_TEMPERATURE, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL, DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    CONF_PROMPT,
+    CONF_RECOMMENDED,
+    CONF_MAX_TOKENS,
+    RECOMMENDED_MAX_TOKENS,
+    CONF_TEMPERATURE,
+    RECOMMENDED_TEMPERATURE,
+    CONF_CHAT_MODEL,
+    RECOMMENDED_CHAT_MODEL,
+    DEFAULT_INSTRUCTIONS_PROMPT_RU,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,7 +50,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_FOLDER_ID): str,
         vol.Required(CONF_API_KEY): str,
-        # vol.Required(CONF_MODEL_TYPE): str,
     }
 )
 
@@ -57,7 +71,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
         self.api_key: str | None = None
 
     async def async_step_user(
-            self, user_input: dict[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
 
@@ -70,12 +84,13 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
         return self.async_show_form(
-            step_id="user", data_schema=STEP_USER_DATA_SCHEMA,
+            step_id="user",
+            data_schema=STEP_USER_DATA_SCHEMA,
         )
 
     @staticmethod
     def async_get_options_flow(
-            config_entry: ConfigEntry,
+        config_entry: ConfigEntry,
     ) -> OptionsFlow:
         """Create the options flow."""
         return YandexGPTOptionsFlow(config_entry)
@@ -87,10 +102,12 @@ class YandexGPTOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self.last_rendered_recommended = config_entry.options.get(CONF_RECOMMENDED, False)
+        self.last_rendered_recommended = config_entry.options.get(
+            CONF_RECOMMENDED, False
+        )
 
     async def async_step_init(
-            self, user_input: dict[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
         options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
@@ -101,7 +118,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
                     user_input.pop(CONF_LLM_HASS_API)
                 return self.async_create_entry(title="", data=user_input)
 
-            # Re-render the options again, now with the recommended options shown/hidden
+            # Re-render the options again,
+            # now with the recommended options shown/hidden
             self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
 
             options = {
@@ -125,8 +143,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
 
 def yandexgpt_config_option_schema(
-        hass: HomeAssistant,
-        options: dict[str, Any] | MappingProxyType[str, Any],
+    hass: HomeAssistant,
+    options: dict[str, Any] | MappingProxyType[str, Any],
 ) -> dict:
     """Return a schema for YandexGPT completion options."""
     hass_apis: list[SelectOptionDict] = [

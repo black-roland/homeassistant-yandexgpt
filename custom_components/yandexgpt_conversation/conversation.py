@@ -128,7 +128,7 @@ class YandexGPTConversationEntity(
                 and user_input.context.user_id
                 and (
                 user := await self.hass.auth.async_get_user(user_input.context.user_id)
-        )
+                )
         ):
             user_name = user.name
 
