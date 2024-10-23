@@ -21,7 +21,8 @@
           "max_tokens": "Maximum tokens to return in response"
         },
         "data_description": {
-          "prompt": "Instruct how the LLM should respond. This can be a template."
+          "prompt": "Instruct how the LLM should respond. This can be a template.",
+          "chat_model": "Description: https://yandex.cloud/en/docs/foundation-models/release-notes/"
         }
       }
     }

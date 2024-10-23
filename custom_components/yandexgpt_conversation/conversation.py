@@ -20,17 +20,28 @@ from homeassistant.util import ulid
 from yandex_cloud_ml_sdk import YCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
-from .const import DOMAIN, LOGGER, CONF_PROMPT, CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE, CONF_MAX_TOKENS, \
-    RECOMMENDED_MAX_TOKENS, CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL, BASE_PROMPT_RU, DEFAULT_INSTRUCTIONS_PROMPT_RU
+from .const import (
+    DOMAIN,
+    LOGGER,
+    CONF_PROMPT,
+    CONF_TEMPERATURE,
+    RECOMMENDED_TEMPERATURE,
+    CONF_MAX_TOKENS,
+    RECOMMENDED_MAX_TOKENS,
+    CONF_CHAT_MODEL,
+    RECOMMENDED_CHAT_MODEL,
+    BASE_PROMPT_RU,
+    DEFAULT_INSTRUCTIONS_PROMPT_RU,
+)
 
 # Max number of back and forth with the LLM to generate a response
 MAX_TOOL_ITERATIONS = 10
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up conversation entities."""
     agent = YandexGPTConversationEntity(config_entry)
@@ -67,7 +78,7 @@ class YandexGPTConversationEntity(
         return MATCH_ALL
 
     async def async_process(
-            self, user_input: conversation.ConversationInput
+        self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         """Process a sentence."""
         settings = {**self.entry.data, **self.entry.options}
@@ -124,18 +135,19 @@ class YandexGPTConversationEntity(
             messages = []
 
         if (
-                user_input.context
-                and user_input.context.user_id
-                and (
+            user_input.context
+            and user_input.context.user_id
+            and (
                 user := await self.hass.auth.async_get_user(user_input.context.user_id)
-                )
+            )
         ):
             user_name = user.name
 
         try:
             prompt_parts = [
                 template.Template(
-                    BASE_PROMPT_RU + options.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
+                    BASE_PROMPT_RU
+                    + options.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
                     self.hass,
                 ).async_render(
                     {
@@ -169,24 +181,27 @@ class YandexGPTConversationEntity(
 
         LOGGER.debug("Prompt: %s", messages)
         trace.async_conversation_trace_append(
-            trace.ConversationTraceEventType.AGENT_DETAIL, {"messages": messages},
+            trace.ConversationTraceEventType.AGENT_DETAIL,
+            {"messages": messages},
         )
 
         client: YCloudML = self.entry.runtime_data
-
+        chat_model = options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL)
+        [model_name, model_version] = chat_model.split("/")
         model_config = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
             "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
-        # To prevent infinite loops, we limit the number of iterations
         try:
             result = await self.hass.async_add_executor_job(
-                client.models
-                .completions(options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL))
+                client.models.completions(
+                    model_name=model_name,
+                    model_version=model_version,
+                )
                 .configure(**model_config)
                 .run,
-                messages
+                messages,
             )
         except Exception as err:
             LOGGER.exception(err)
