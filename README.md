@@ -29,7 +29,7 @@ TLDR: Добавьте интеграцию, используя голубые �
 
 <p>
   <img src="https://github.com/user-attachments/assets/c4f2520d-a1e7-433b-99d6-9db29b2c99f1" height="340px" alt="Assist" />
-  <img src="https://github.com/user-attachments/assets/3739e48b-97ac-4069-954d-f770c4fad7d3" height="340px" alt="Morning digests" />
+  <img src="https://github.com/user-attachments/assets/34f05829-7a10-4087-8596-5087b8310533" height="340px" alt="Morning digests" />
 </p>
 
 ## Спонсорство
