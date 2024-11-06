@@ -1,15 +1,15 @@
 {
   "domain": "yandexgpt_conversation",
   "name": "YandexGPT",
-  "version": "1.0.3",
   "after_dependencies": ["assist_pipeline", "intent"],
   "codeowners": ["@black-roland"],
   "config_flow": true,
   "dependencies": ["conversation"],
   "documentation": "https://github.com/black-roland/homeassistant-yandexgpt/wiki",
-  "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
-  "loggers": ["yandexgpt_conversation"],
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "requirements": ["yandex-cloud-ml-sdk"]
+  "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
+  "loggers": ["yandexgpt_conversation"],
+  "requirements": ["yandex-cloud-ml-sdk"],
+  "version": "1.0.3"
 }

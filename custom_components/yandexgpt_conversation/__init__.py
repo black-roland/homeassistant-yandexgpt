@@ -10,22 +10,24 @@ import base64
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_API_KEY
+from homeassistant.const import CONF_API_KEY, Platform
 from homeassistant.core import (
     HomeAssistant,
-    SupportsResponse,
     ServiceCall,
     ServiceResponse,
+    SupportsResponse,
 )
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
 from homeassistant.helpers.typing import ConfigType
 from yandex_cloud_ml_sdk import YCloudML
 
+from .const import CONF_FOLDER_ID, DOMAIN
 from .yandexart import YandexArt
-from .const import DOMAIN, CONF_FOLDER_ID
 
 SERVICE_GENERATE_IMAGE = "generate_image"
 PLATFORMS = (Platform.CONVERSATION,)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

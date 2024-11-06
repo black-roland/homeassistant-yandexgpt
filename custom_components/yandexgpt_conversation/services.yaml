@@ -11,6 +11,7 @@ generate_image:
       selector:
         number:
           min: 0
+          max: 2999999999999999
     prompt:
       required: true
       selector:
