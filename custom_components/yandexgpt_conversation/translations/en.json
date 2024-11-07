@@ -26,5 +26,30 @@
         }
       }
     }
+  },
+  "services": {
+    "generate_image": {
+      "name": "Generate image",
+      "description": "Turn a prompt into an image",
+      "fields": {
+        "config_entry": {
+          "name": "Config Entry",
+          "description": "The config entry to use for this action"
+        },
+        "seed": {
+          "name": "Seed",
+          "description": "Generation seed"
+        },
+        "prompt": {
+          "name": "Prompt",
+          "description": "The text to turn into an image",
+          "example": "A photo of a dog"
+        },
+        "file_name": {
+          "name": "File name",
+          "description": "Output file path"
+        }
+      }
+    }
   }
 }
