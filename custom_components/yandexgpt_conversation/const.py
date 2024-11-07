@@ -28,3 +28,7 @@ DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистен
 Отвечай на вопросы правдиво.
 Отвечай простым текстом, без вводных фраз и объяснений. Не усложняй и отвечай по сути.
 """
+
+ATTR_FILENAME = "file_name"
+ATTR_SEED = "seed"
+ATTR_PROMPT = "prompt"
