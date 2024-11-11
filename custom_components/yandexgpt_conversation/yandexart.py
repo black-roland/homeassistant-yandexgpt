@@ -8,6 +8,8 @@ import asyncio
 import aiohttp
 
 
+# TODO: Replace with the official SDK:
+# https://github.com/yandex-cloud/yandex-cloud-ml-sdk/tree/master/examples/async/image_generation
 class YandexArt:
     """YandexART wrapper."""
 
@@ -15,7 +17,7 @@ class YandexArt:
         self.folder_id = folder_id
         self.api_key = api_key
 
-    async def generate(self, seed, prompt):
+    async def generate(self, seed: str, prompt: str):
 
         operation_id = None
 

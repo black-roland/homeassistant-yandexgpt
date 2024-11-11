@@ -75,7 +75,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                         "integration": DOMAIN,
                     }
                 ),
-                vol.Required("seed"): vol.All(vol.Coerce(int), vol.Clamp(min=0)),
+                vol.Required("seed"): vol.All(
+                    vol.Coerce(str), cv.matches_regex(r"[0-9]+")
+                ),
                 vol.Required("prompt"): cv.string,
                 vol.Required("file_name"): cv.path,
             }

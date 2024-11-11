@@ -38,7 +38,7 @@
         },
         "seed": {
           "name": "Seed",
-          "description": "Generation seed"
+          "description": "Generation seed (any number from 0 to 2⁶³-1)"
         },
         "prompt": {
           "name": "Prompt",

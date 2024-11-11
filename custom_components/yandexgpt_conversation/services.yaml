@@ -9,9 +9,7 @@ generate_image:
       required: true
       example: "{{ (now() | as_timestamp * 1000000) | round }}"
       selector:
-        number:
-          min: 0
-          max: 2999999999999999
+        text:
     prompt:
       required: true
       selector:
