@@ -21,7 +21,7 @@ YandexGPT — это облачный сервис, плата за которы
 
 Инструкции по получению ключа API и настройке интеграции можно найти в [wiki](https://github.com/black-roland/homeassistant-yandexgpt/wiki).
 
-TLDR: Добавьте интеграцию, используя голубые кнопки выше, а затем получите [идентификатор каталога](https://yandex.cloud/ru/docs/resource-manager/operations/folder/get-id) и [ключ API](https://yandex.cloud/en/docs/iam/operations/api-key/create).
+TLDR: Добавьте интеграцию, используя голубые кнопки выше, а затем получите [идентификатор каталога](https://yandex.cloud/ru/docs/resource-manager/operations/folder/get-id) и [ключ API](https://yandex.cloud/en/docs/iam/operations/api-key/create). Сервисному аккаунту нужно указать следующие роли: `ai.languageModels.user` и `ai.imageGeneration.user`.
 
 ## Примеры использования
 
@@ -59,4 +59,4 @@ YandexGPT is a cloud service. Fees are charged according to Yandex Cloud tariffs
 
 ## Set up
 
-Use My Home Assistant buttons above to install and configure the integration. Please check out the official documentation on how to retrieve [folder ID](https://yandex.cloud/en/docs/resource-manager/operations/folder/get-id) and [API key](https://yandex.cloud/en/docs/iam/operations/api-key/create).
+Use blue buttons above to install and configure the integration. Please check out the official documentation on how to retrieve [folder ID](https://yandex.cloud/en/docs/resource-manager/operations/folder/get-id) and [API key](https://yandex.cloud/en/docs/iam/operations/api-key/create). For a service account it's required to set the following roles: `ai.languageModels.user` and `ai.imageGeneration.user`.
