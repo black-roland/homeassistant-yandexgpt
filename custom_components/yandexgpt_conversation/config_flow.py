@@ -149,7 +149,7 @@ def yandexgpt_config_option_schema(
     """Return a schema for YandexGPT completion options."""
     hass_apis: list[SelectOptionDict] = [
         SelectOptionDict(
-            label="No control",
+            label="No access to devices / Без доступа к устройствам",
             value="none",
         )
     ]

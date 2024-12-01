@@ -14,15 +14,14 @@
       "init": {
         "data": {
           "prompt": "Instructions",
-          "llm_hass_api": "Control Home Assistant",
+          "llm_hass_api": "Access to devices",
           "recommended": "Recommended model settings",
           "chat_model": "Model",
           "temperature": "Temperature",
           "max_tokens": "Maximum tokens to return in response"
         },
         "data_description": {
-          "prompt": "Instruct how the LLM should respond. This can be a template.",
-          "chat_model": "Description: https://yandex.cloud/en/docs/foundation-models/release-notes/"
+          "prompt": "Instruct how the LLM should respond. This can be a template."
         }
       }
     }
