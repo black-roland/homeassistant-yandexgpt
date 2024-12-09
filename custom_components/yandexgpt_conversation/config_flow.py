@@ -149,7 +149,7 @@ def yandexgpt_config_option_schema(
     """Return a schema for YandexGPT completion options."""
     hass_apis: list[SelectOptionDict] = [
         SelectOptionDict(
-            label="No access to devices / Без доступа к устройствам",
+            label="No access to devices",
             value="none",
         )
     ]
@@ -164,7 +164,7 @@ def yandexgpt_config_option_schema(
     schema = {
         vol.Optional(CONF_PROMPT): TemplateSelector(),
         vol.Optional(CONF_LLM_HASS_API, default="none"): SelectSelector(
-            SelectSelectorConfig(options=hass_apis)
+            SelectSelectorConfig(options=hass_apis, translation_key=CONF_LLM_HASS_API)
         ),
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)

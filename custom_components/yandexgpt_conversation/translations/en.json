@@ -21,8 +21,16 @@
           "max_tokens": "Maximum tokens to return in response"
         },
         "data_description": {
+          "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
           "prompt": "Instruct how the LLM should respond. This can be a template."
         }
+      }
+    }
+  },
+  "selector": {
+    "llm_hass_api": {
+      "options": {
+        "none": "No access to devices"
       }
     }
   },
