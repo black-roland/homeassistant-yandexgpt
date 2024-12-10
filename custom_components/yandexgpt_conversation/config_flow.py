@@ -178,6 +178,8 @@ def yandexgpt_config_option_schema(
         SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite/latest"),
         SelectOptionDict(label="YandexGPT Pro", value="yandexgpt/latest"),
         SelectOptionDict(label="YandexGPT Pro 32k", value="yandexgpt-32k/latest"),
+        SelectOptionDict(label="Llama 8b", value="llama-lite/latest"),
+        SelectOptionDict(label="Llama 70b", value="llama/latest"),
     ]
 
     schema.update(
