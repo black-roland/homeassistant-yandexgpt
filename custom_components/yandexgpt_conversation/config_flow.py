@@ -6,45 +6,43 @@
 
 from __future__ import annotations
 
-import logging
 from types import MappingProxyType
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
-    ConfigEntry,
 )
-from homeassistant.const import CONF_LLM_HASS_API, CONF_API_KEY
+from homeassistant.const import CONF_API_KEY, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import (
-    SelectOptionDict,
-    TemplateSelector,
     NumberSelector,
     NumberSelectorConfig,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    TemplateSelector,
 )
 
 from .const import (
-    DOMAIN,
+    CONF_ASYNC_MODE,
+    CONF_CHAT_MODEL,
     CONF_FOLDER_ID,
+    CONF_MAX_TOKENS,
     CONF_PROMPT,
     CONF_RECOMMENDED,
-    CONF_MAX_TOKENS,
-    RECOMMENDED_MAX_TOKENS,
     CONF_TEMPERATURE,
-    RECOMMENDED_TEMPERATURE,
-    CONF_CHAT_MODEL,
-    RECOMMENDED_CHAT_MODEL,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    DOMAIN,
+    RECOMMENDED_CHAT_MODEL,
+    RECOMMENDED_MAX_TOKENS,
+    RECOMMENDED_TEMPERATURE,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -191,6 +189,9 @@ def yandexgpt_config_option_schema(
             ): SelectSelector(
                 SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=models)
             ),
+            vol.Required(
+                CONF_ASYNC_MODE, default=options.get(CONF_ASYNC_MODE, False)
+            ): bool,
             vol.Optional(
                 CONF_TEMPERATURE,
                 description={"suggested_value": options.get(CONF_TEMPERATURE)},

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import base64
+from typing import Callable
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -21,7 +22,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.typing import ConfigType
-from yandex_cloud_ml_sdk import YCloudML
+from yandex_cloud_ml_sdk import AsyncYCloudML, YCloudML
 
 from .const import ATTR_FILENAME, ATTR_PROMPT, ATTR_SEED, CONF_FOLDER_ID, DOMAIN
 from .yandexart import YandexArt
@@ -88,15 +89,19 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
+def sdk_factory(sdk, async_sdk) -> Callable[[bool], YCloudML | AsyncYCloudML]:
+    return lambda is_async: (async_sdk if is_async else sdk)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up YandexGPT from a config entry."""
     settings = {**entry.data, **entry.options}
 
-    yandexgpt_sdk = YCloudML(
-        folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY]
+    sdk_conf = {"folder_id": settings[CONF_FOLDER_ID], "auth": settings[CONF_API_KEY]}
+    entry.runtime_data = sdk_factory(
+        YCloudML(**sdk_conf),
+        AsyncYCloudML(**sdk_conf),
     )
-
-    entry.runtime_data = yandexgpt_sdk
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

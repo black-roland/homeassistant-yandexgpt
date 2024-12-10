@@ -11,27 +11,29 @@ from typing import Literal
 from homeassistant.components import conversation
 from homeassistant.components.conversation import trace
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import MATCH_ALL, CONF_LLM_HASS_API
+from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, TemplateError
-from homeassistant.helpers import intent, llm, template, device_registry as dr
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import intent, llm, template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
-from yandex_cloud_ml_sdk import YCloudML
+from yandex_cloud_ml_sdk import AsyncYCloudML, YCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import (
-    DOMAIN,
-    LOGGER,
+    BASE_PROMPT_RU,
+    CONF_ASYNC_MODE,
+    CONF_CHAT_MODEL,
+    CONF_MAX_TOKENS,
     CONF_PROMPT,
     CONF_TEMPERATURE,
-    RECOMMENDED_TEMPERATURE,
-    CONF_MAX_TOKENS,
-    RECOMMENDED_MAX_TOKENS,
-    CONF_CHAT_MODEL,
-    RECOMMENDED_CHAT_MODEL,
-    BASE_PROMPT_RU,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    DOMAIN,
+    LOGGER,
+    RECOMMENDED_CHAT_MODEL,
+    RECOMMENDED_MAX_TOKENS,
+    RECOMMENDED_TEMPERATURE,
 )
 
 # Max number of back and forth with the LLM to generate a response
@@ -185,24 +187,25 @@ class YandexGPTConversationEntity(
             {"messages": messages},
         )
 
-        client: YCloudML = self.entry.runtime_data
-        chat_model = options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL)
-        [model_name, model_version] = chat_model.split("/")
-        model_config = {
+        is_async = options.get(CONF_ASYNC_MODE, False)
+        client: YCloudML | AsyncYCloudML = self.entry.runtime_data(is_async)
+        # TODO: Allow selecting model version
+        model_name_ver = zip(
+            ["model_name", "model_version"],
+            options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL).split("/"),
+        )
+        model_conf = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
             "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
         try:
-            result = await self.hass.async_add_executor_job(
-                client.models.completions(
-                    model_name=model_name,
-                    model_version=model_version,
-                )
-                .configure(**model_config)
-                .run,
-                messages,
-            )
+            model = client.models.completions(**dict(model_name_ver))
+            model.configure(**model_conf)
+            if options.get(CONF_ASYNC_MODE, False):
+                result = await model.run(messages)
+            else:
+                result = await self.hass.async_add_executor_job(model.run, messages)
         except Exception as err:
             LOGGER.exception(err)
 

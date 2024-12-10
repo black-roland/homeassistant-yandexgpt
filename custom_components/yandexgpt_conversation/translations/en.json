@@ -17,6 +17,7 @@
           "llm_hass_api": "Access to devices",
           "recommended": "Recommended model settings",
           "chat_model": "Model",
+          "async_mode": "Asynchronous mode",
           "temperature": "Temperature",
           "max_tokens": "Maximum tokens to return in response"
         },
