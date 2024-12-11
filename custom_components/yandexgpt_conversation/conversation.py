@@ -18,12 +18,11 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import intent, llm, template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
-from yandex_cloud_ml_sdk import AsyncYCloudML, YCloudML
+from yandex_cloud_ml_sdk import AsyncYCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import (
     BASE_PROMPT_RU,
-    CONF_ASYNC_MODE,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
@@ -187,8 +186,7 @@ class YandexGPTConversationEntity(
             {"messages": messages},
         )
 
-        is_async = options.get(CONF_ASYNC_MODE, False)
-        client: YCloudML | AsyncYCloudML = self.entry.runtime_data(is_async)
+        client: AsyncYCloudML = self.entry.runtime_data
         # TODO: Allow selecting model version
         model_name_ver = zip(
             ["model_name", "model_version"],
@@ -201,11 +199,7 @@ class YandexGPTConversationEntity(
 
         try:
             model = client.models.completions(**dict(model_name_ver))
-            model.configure(**model_conf)
-            if options.get(CONF_ASYNC_MODE, False):
-                result = await model.run(messages)
-            else:
-                result = await self.hass.async_add_executor_job(model.run, messages)
+            result = await model.configure(**model_conf).run(messages)
         except Exception as err:
             LOGGER.exception(err)
 

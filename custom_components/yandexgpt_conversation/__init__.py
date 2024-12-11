@@ -97,10 +97,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up YandexGPT from a config entry."""
     settings = {**entry.data, **entry.options}
 
-    sdk_conf = {"folder_id": settings[CONF_FOLDER_ID], "auth": settings[CONF_API_KEY]}
-    entry.runtime_data = sdk_factory(
-        YCloudML(**sdk_conf),
-        AsyncYCloudML(**sdk_conf),
+    entry.runtime_data = AsyncYCloudML(
+        folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY]
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

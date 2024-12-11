@@ -15,7 +15,6 @@ CONF_RECOMMENDED = "recommended"
 CONF_MAX_TOKENS = "max_tokens"
 CONF_TEMPERATURE = "temperature"
 CONF_CHAT_MODEL = "chat_model"
-CONF_ASYNC_MODE = "async_mode"
 
 RECOMMENDED_CHAT_MODEL = "yandexgpt-lite/latest"
 RECOMMENDED_MAX_TOKENS = 1024
