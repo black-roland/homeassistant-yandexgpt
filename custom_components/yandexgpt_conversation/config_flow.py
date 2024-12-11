@@ -122,6 +122,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
             options = {
                 CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
                 CONF_PROMPT: user_input[CONF_PROMPT],
+                CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
+                CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
             }
 
         suggested_values = options.copy()
@@ -158,10 +160,29 @@ def yandexgpt_config_option_schema(
         for api in llm.async_get_apis(hass)
     )
 
+    models = [
+        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite/latest"),
+        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt/latest"),
+        SelectOptionDict(label="YandexGPT Pro 32k", value="yandexgpt-32k/latest"),
+        SelectOptionDict(label="Llama 8b", value="llama-lite/latest"),
+        SelectOptionDict(label="Llama 70b", value="llama/latest"),
+    ]
+
     schema = {
         vol.Optional(CONF_PROMPT): TemplateSelector(),
-        vol.Optional(CONF_LLM_HASS_API, default="none"): SelectSelector(
+        vol.Optional(
+            CONF_LLM_HASS_API,
+            description={"suggested_value": options.get(CONF_LLM_HASS_API)},
+            default="none",
+        ): SelectSelector(
             SelectSelectorConfig(options=hass_apis, translation_key=CONF_LLM_HASS_API)
+        ),
+        vol.Optional(
+            CONF_CHAT_MODEL,
+            description={"suggested_value": options.get(CONF_CHAT_MODEL)},
+            default=RECOMMENDED_CHAT_MODEL,
+        ): SelectSelector(
+            SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=models)
         ),
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
@@ -171,23 +192,8 @@ def yandexgpt_config_option_schema(
     if options.get(CONF_RECOMMENDED):
         return schema
 
-    models = [
-        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite/latest"),
-        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt/latest"),
-        SelectOptionDict(label="YandexGPT Pro 32k", value="yandexgpt-32k/latest"),
-        SelectOptionDict(label="Llama 8b", value="llama-lite/latest"),
-        SelectOptionDict(label="Llama 70b", value="llama/latest"),
-    ]
-
     schema.update(
         {
-            vol.Optional(
-                CONF_CHAT_MODEL,
-                description={"suggested_value": options.get(CONF_CHAT_MODEL)},
-                default=RECOMMENDED_CHAT_MODEL,
-            ): SelectSelector(
-                SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=models)
-            ),
             vol.Optional(
                 CONF_TEMPERATURE,
                 description={"suggested_value": options.get(CONF_TEMPERATURE)},
