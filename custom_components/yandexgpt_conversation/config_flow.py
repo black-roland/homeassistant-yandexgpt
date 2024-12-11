@@ -33,12 +33,15 @@ from .const import (
     CONF_CHAT_MODEL,
     CONF_FOLDER_ID,
     CONF_MAX_TOKENS,
+    CONF_MODEL_NAME,
+    CONF_MODEL_VERSION,
     CONF_PROMPT,
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    DEFAULT_MODEL_NAME,
+    DEFAULT_MODEL_VERSION,
     DOMAIN,
-    RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
 )
@@ -60,7 +63,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for YandexGPT."""
 
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Initialize config flow."""
@@ -123,12 +126,16 @@ class YandexGPTOptionsFlow(OptionsFlow):
                 CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
                 CONF_PROMPT: user_input[CONF_PROMPT],
                 CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
-                CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
+                CONF_MODEL_NAME: user_input[CONF_MODEL_NAME],
             }
 
         suggested_values = options.copy()
         if not suggested_values.get(CONF_PROMPT):
             suggested_values[CONF_PROMPT] = DEFAULT_INSTRUCTIONS_PROMPT_RU
+
+        if suggested_values.get(CONF_CHAT_MODEL):
+            deprecated_model_name = suggested_values[CONF_CHAT_MODEL].split("/")[0]
+            suggested_values[CONF_MODEL_NAME] = deprecated_model_name
 
         schema = self.add_suggested_values_to_schema(
             vol.Schema(yandexgpt_config_option_schema(self.hass, options)),
@@ -160,12 +167,12 @@ def yandexgpt_config_option_schema(
         for api in llm.async_get_apis(hass)
     )
 
-    models = [
-        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite/latest"),
-        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt/latest"),
-        SelectOptionDict(label="YandexGPT Pro 32k", value="yandexgpt-32k/latest"),
-        SelectOptionDict(label="Llama 8b", value="llama-lite/latest"),
-        SelectOptionDict(label="Llama 70b", value="llama/latest"),
+    model_names = [
+        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
+        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt"),
+        SelectOptionDict(label="YandexGPT Pro 32k", value="yandexgpt-32k"),
+        SelectOptionDict(label="Llama 8b", value="llama-lite"),
+        SelectOptionDict(label="Llama 70b", value="llama"),
     ]
 
     schema = {
@@ -178,11 +185,11 @@ def yandexgpt_config_option_schema(
             SelectSelectorConfig(options=hass_apis, translation_key=CONF_LLM_HASS_API)
         ),
         vol.Optional(
-            CONF_CHAT_MODEL,
-            description={"suggested_value": options.get(CONF_CHAT_MODEL)},
-            default=RECOMMENDED_CHAT_MODEL,
+            CONF_MODEL_NAME,
+            description={"suggested_value": options.get(CONF_MODEL_NAME)},
+            default=DEFAULT_MODEL_NAME,
         ): SelectSelector(
-            SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=models)
+            SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=model_names)
         ),
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
@@ -192,8 +199,23 @@ def yandexgpt_config_option_schema(
     if options.get(CONF_RECOMMENDED):
         return schema
 
+    model_versions = [
+        SelectOptionDict(label="Deprecated", value="deprecated"),
+        SelectOptionDict(label="Latest", value="latest"),
+        SelectOptionDict(label="Release Candidate", value="rc"),
+    ]
+
     schema.update(
         {
+            vol.Optional(
+                CONF_MODEL_VERSION,
+                description={"suggested_value": options.get(CONF_MODEL_VERSION)},
+                default=DEFAULT_MODEL_VERSION,
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    mode=SelectSelectorMode.DROPDOWN, options=model_versions
+                )
+            ),
             vol.Optional(
                 CONF_TEMPERATURE,
                 description={"suggested_value": options.get(CONF_TEMPERATURE)},

@@ -14,9 +14,11 @@ CONF_PROMPT = "prompt"
 CONF_RECOMMENDED = "recommended"
 CONF_MAX_TOKENS = "max_tokens"
 CONF_TEMPERATURE = "temperature"
-CONF_CHAT_MODEL = "chat_model"
-
-RECOMMENDED_CHAT_MODEL = "yandexgpt-lite/latest"
+CONF_CHAT_MODEL = "chat_model"  # deprecated
+CONF_MODEL_NAME = "model_name"
+CONF_MODEL_VERSION = "model_version"
+DEFAULT_MODEL_NAME = "yandexgpt-lite"
+DEFAULT_MODEL_VERSION = "latest"
 RECOMMENDED_MAX_TOKENS = 1024
 RECOMMENDED_TEMPERATURE = 0.6
 

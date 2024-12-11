@@ -25,12 +25,15 @@ from .const import (
     BASE_PROMPT_RU,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
+    CONF_MODEL_NAME,
+    CONF_MODEL_VERSION,
     CONF_PROMPT,
     CONF_TEMPERATURE,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    DEFAULT_MODEL_NAME,
+    DEFAULT_MODEL_VERSION,
     DOMAIN,
     LOGGER,
-    RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
 )
@@ -187,18 +190,17 @@ class YandexGPTConversationEntity(
         )
 
         client: AsyncYCloudML = self.entry.runtime_data
-        # TODO: Allow selecting model version
-        model_name_ver = zip(
-            ["model_name", "model_version"],
-            options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL).split("/"),
-        )
+        model_name = options.get(CONF_MODEL_NAME, DEFAULT_MODEL_NAME)
+        # model name and version were stored in a different format previously
+        model_name = options.get(CONF_CHAT_MODEL, model_name).split("/")[0]
+        model_ver = options.get(CONF_MODEL_VERSION, DEFAULT_MODEL_VERSION)
         model_conf = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
             "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
         try:
-            model = client.models.completions(**dict(model_name_ver))
+            model = client.models.completions(model_name, model_version=model_ver)
             result = await model.configure(**model_conf).run(messages)
         except Exception as err:
             LOGGER.exception(err)
