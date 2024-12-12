@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import base64
-from typing import Callable
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -22,7 +21,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.typing import ConfigType
-from yandex_cloud_ml_sdk import AsyncYCloudML, YCloudML
+from yandex_cloud_ml_sdk import AsyncYCloudML
 
 from .const import ATTR_FILENAME, ATTR_PROMPT, ATTR_SEED, CONF_FOLDER_ID, DOMAIN
 from .yandexart import YandexArt
@@ -87,10 +86,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     )
 
     return True
-
-
-def sdk_factory(sdk, async_sdk) -> Callable[[bool], YCloudML | AsyncYCloudML]:
-    return lambda is_async: (async_sdk if is_async else sdk)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
