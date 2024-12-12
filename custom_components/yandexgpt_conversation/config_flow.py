@@ -33,13 +33,12 @@ from .const import (
     CONF_CHAT_MODEL,
     CONF_FOLDER_ID,
     CONF_MAX_TOKENS,
-    CONF_MODEL_NAME,
     CONF_MODEL_VERSION,
     CONF_PROMPT,
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
+    DEFAULT_CHAT_MODEL,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
-    DEFAULT_MODEL_NAME,
     DEFAULT_MODEL_VERSION,
     DOMAIN,
     RECOMMENDED_MAX_TOKENS,
@@ -126,7 +125,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
                 CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
                 CONF_PROMPT: user_input[CONF_PROMPT],
                 CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
-                CONF_MODEL_NAME: user_input[CONF_MODEL_NAME],
+                CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
             }
 
         suggested_values = options.copy()
@@ -135,7 +134,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
         if suggested_values.get(CONF_CHAT_MODEL):
             deprecated_model_name = suggested_values[CONF_CHAT_MODEL].split("/")[0]
-            suggested_values[CONF_MODEL_NAME] = deprecated_model_name
+            suggested_values[CONF_CHAT_MODEL] = deprecated_model_name
 
         schema = self.add_suggested_values_to_schema(
             vol.Schema(yandexgpt_config_option_schema(self.hass, options)),
@@ -185,9 +184,9 @@ def yandexgpt_config_option_schema(
             SelectSelectorConfig(options=hass_apis, translation_key=CONF_LLM_HASS_API)
         ),
         vol.Optional(
-            CONF_MODEL_NAME,
-            description={"suggested_value": options.get(CONF_MODEL_NAME)},
-            default=DEFAULT_MODEL_NAME,
+            CONF_CHAT_MODEL,
+            description={"suggested_value": options.get(CONF_CHAT_MODEL)},
+            default=DEFAULT_CHAT_MODEL,
         ): SelectSelector(
             SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=model_names)
         ),

@@ -25,12 +25,11 @@ from .const import (
     BASE_PROMPT_RU,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
-    CONF_MODEL_NAME,
     CONF_MODEL_VERSION,
     CONF_PROMPT,
     CONF_TEMPERATURE,
+    DEFAULT_CHAT_MODEL,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
-    DEFAULT_MODEL_NAME,
     DEFAULT_MODEL_VERSION,
     DOMAIN,
     LOGGER,
@@ -190,9 +189,8 @@ class YandexGPTConversationEntity(
         )
 
         client: AsyncYCloudML = self.entry.runtime_data
-        model_name = options.get(CONF_MODEL_NAME, DEFAULT_MODEL_NAME)
         # model name and version were stored in a different format previously
-        model_name = options.get(CONF_CHAT_MODEL, model_name).split("/")[0]
+        model_name = options.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL).split("/")[0]
         model_ver = options.get(CONF_MODEL_VERSION, DEFAULT_MODEL_VERSION)
         model_conf = {
             "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
