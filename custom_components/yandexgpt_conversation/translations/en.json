@@ -15,14 +15,14 @@
         "data": {
           "prompt": "Instructions",
           "llm_hass_api": "Access to devices",
-          "model_name": "Model",
+          "chat_model": "Model",
           "recommended": "Recommended model settings",
           "model_version": "Version",
           "temperature": "Temperature",
           "max_tokens": "Maximum tokens to return in response"
         },
         "data_description": {
-          "model_name": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
+          "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
           "prompt": "Instruct how the LLM should respond. This can be a template."
         }
       }
