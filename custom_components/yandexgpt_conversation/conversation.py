@@ -23,6 +23,7 @@ from yandex_cloud_ml_sdk._models.completions.message import TextMessage
 
 from .const import (
     BASE_PROMPT_RU,
+    CONF_ASYNCHRONOUS_MODE,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
     CONF_MODEL_VERSION,
@@ -199,7 +200,7 @@ class YandexGPTConversationEntity(
 
         try:
             model = client.models.completions(model_name, model_version=model_ver)
-            result = await model.configure(**model_conf).run(messages)
+            result = await self.run_completion(model.configure(**model_conf), messages)
         except Exception as err:
             LOGGER.exception(err)
 
@@ -221,3 +222,11 @@ class YandexGPTConversationEntity(
         return conversation.ConversationResult(
             response=intent_response, conversation_id=conversation_id
         )
+
+    async def run_completion(self, model, messages):
+        if not self.entry.options.get(CONF_ASYNCHRONOUS_MODE, False):
+            return await model.run(messages)
+
+        operation = await model.run_deferred(messages)
+        LOGGER.debug("Async operation ID: %s", operation.id)
+        return await operation.wait(poll_timeout=300, poll_interval=0.5)

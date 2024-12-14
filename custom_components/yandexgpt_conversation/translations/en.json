@@ -19,6 +19,7 @@
           "recommended": "Recommended model settings",
           "model_version": "Version",
           "temperature": "Temperature",
+          "asynchronous_mode": "Asynchronous mode",
           "max_tokens": "Maximum tokens to return in response"
         },
         "data_description": {

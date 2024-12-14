@@ -30,6 +30,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_ASYNCHRONOUS_MODE,
     CONF_CHAT_MODEL,
     CONF_FOLDER_ID,
     CONF_MAX_TOKENS,
@@ -219,6 +220,11 @@ def yandexgpt_config_option_schema(
                 description={"suggested_value": options.get(CONF_TEMPERATURE)},
                 default=RECOMMENDED_TEMPERATURE,
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
+            vol.Optional(
+                CONF_ASYNCHRONOUS_MODE,
+                description={"suggested_value": options.get(CONF_ASYNCHRONOUS_MODE)},
+                default=options.get(CONF_ASYNCHRONOUS_MODE, False),
+            ): bool,
             vol.Optional(
                 CONF_MAX_TOKENS,
                 description={"suggested_value": options.get(CONF_MAX_TOKENS)},

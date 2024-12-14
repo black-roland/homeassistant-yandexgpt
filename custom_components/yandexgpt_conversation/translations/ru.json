@@ -19,6 +19,7 @@
           "recommended": "Рекомендуемые настройки модели",
           "model_version": "Версия",
           "temperature": "Температура",
+          "asynchronous_mode": "Асинхронный режим",
           "max_tokens": "Ограничить количество токенов в ответе"
         },
         "data_description": {
