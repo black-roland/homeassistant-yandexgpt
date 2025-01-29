@@ -38,7 +38,10 @@ TLDR: Добавьте интеграцию, используя голубые �
 
 Большое спасибо всем, кто меня поддерживает:
 
-<img src="https://github.com/user-attachments/assets/5fe01201-a2b7-41e7-b8a5-4ee42e4fdc4d" height="200px" alt="Андрей" />
+<p>
+  <img src="https://github.com/user-attachments/assets/ed2b200c-e692-421c-9b61-e92975a796fe" height="400px" alt="Александр" />
+  <img src="https://github.com/user-attachments/assets/5fe01201-a2b7-41e7-b8a5-4ee42e4fdc4d" height="200px" alt="Андрей" />
+<p>
 
 ---
 
