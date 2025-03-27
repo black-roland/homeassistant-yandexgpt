@@ -69,5 +69,13 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "yandex_cloud_error": {
+      "message": "Error talking to Yandex Cloud: {details}"
+    },
+    "ethics_filter": {
+      "message": "The message got blocked by the ethics filter"
+    }
   }
 }

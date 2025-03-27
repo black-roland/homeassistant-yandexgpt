@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from typing import Literal
 
+from grpc.aio import AioRpcError
 from homeassistant.components import assist_pipeline, conversation
 from homeassistant.components.conversation import trace
 from homeassistant.config_entries import ConfigEntry
@@ -84,7 +85,11 @@ async def _transform_stream(
                     yield {"content": new_text}
                     previous_text = alternative.text
             elif alternative.status == AlternativeStatus.CONTENT_FILTER:
-                raise HomeAssistantError("The message got blocked by the ethics filter")
+                LOGGER.warning("The message got blocked by the ethics filter")
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="ethics_filter",
+                )
             elif alternative.status == AlternativeStatus.TRUNCATED_FINAL:
                 LOGGER.warning("Response was truncated by YandexGPT")
                 new_text = alternative.text[len(previous_text) :]
@@ -204,18 +209,19 @@ class YandexGPTConversationEntity(
             else:
                 response_stream = configured_model.run_stream(messages)
 
-        except Exception as err:
+            async for content in chat_log.async_add_delta_content_stream(
+                user_input.agent_id,
+                _transform_stream(response_stream),
+            ):
+                if isinstance(content, conversation.AssistantContent):
+                    messages.append(_convert_content(content))
+        except AioRpcError as err:
             LOGGER.exception("Error talking to Yandex Cloud: %s", err)
             raise HomeAssistantError(
-                f"Error talking to Yandex Cloud: {err}"
+                translation_domain=DOMAIN,
+                translation_key="yandex_cloud_error",
+                translation_placeholders={"details": str(err.details())},
             ) from err
-
-        async for content in chat_log.async_add_delta_content_stream(
-            user_input.agent_id,
-            _transform_stream(response_stream),
-        ):
-            if isinstance(content, conversation.AssistantContent):
-                messages.append(_convert_content(content))
 
         intent_response = intent.IntentResponse(language=user_input.language)
         assert type(chat_log.content[-1]) is conversation.AssistantContent

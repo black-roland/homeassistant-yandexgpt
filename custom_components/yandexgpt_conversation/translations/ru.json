@@ -71,5 +71,13 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "yandex_cloud_error": {
+      "message": "Ошибка при обращении к Yandex Cloud: {details}"
+    },
+    "ethics_filter": {
+      "message": "Сообщение заблокировано этическим фильтром"
+    }
   }
 }
