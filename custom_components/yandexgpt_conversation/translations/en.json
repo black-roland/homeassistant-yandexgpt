@@ -6,7 +6,16 @@
           "folder_id": "Folder ID",
           "api_key": "API key"
         }
+      },
+      "reconfigure": {
+        "data": {
+          "folder_id": "Folder ID",
+          "api_key": "API key"
+        }
       }
+    },
+    "abort": {
+      "reconfigure_successful": "Configuration updated"
     }
   },
   "options": {

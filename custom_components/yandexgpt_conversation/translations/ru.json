@@ -6,7 +6,16 @@
           "folder_id": "Идентификатор каталога",
           "api_key": "Ключ API"
         }
+      },
+      "reconfigure": {
+        "data": {
+          "folder_id": "Идентификатор каталога",
+          "api_key": "Ключ API"
+        }
       }
+    },
+    "abort": {
+      "reconfigure_successful": "Конфигурация обновлена"
     }
   },
   "options": {
