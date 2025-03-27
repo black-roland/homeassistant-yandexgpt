@@ -22,10 +22,6 @@ DEFAULT_MODEL_VERSION = "latest"
 RECOMMENDED_MAX_TOKENS = 1024
 RECOMMENDED_TEMPERATURE = 0.6
 
-BASE_PROMPT_RU = (
-    'Текущее время: {{ now().strftime("%H:%M:%S") }}. '
-    'Текущая дата: {{ now().strftime("%Y-%m-%d") }}.\n'
-)
 DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистент для Home Assistant.
 Отвечай на вопросы правдиво.
 Отвечай простым текстом, без вводных фраз и объяснений. Не усложняй и отвечай по сути.

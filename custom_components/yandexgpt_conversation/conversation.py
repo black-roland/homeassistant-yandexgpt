@@ -6,23 +6,27 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from typing import Literal
 
-from homeassistant.components import conversation
+from homeassistant.components import assist_pipeline, conversation
 from homeassistant.components.conversation import trace
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError, TemplateError
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import chat_session
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import intent, llm, template
+from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import ulid
 from yandex_cloud_ml_sdk import AsyncYCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
+from yandex_cloud_ml_sdk._models.completions.result import (
+    AlternativeStatus,
+    GPTModelResult,
+)
 
 from .const import (
-    BASE_PROMPT_RU,
     CONF_ASYNCHRONOUS_MODE,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
@@ -38,9 +42,6 @@ from .const import (
     RECOMMENDED_TEMPERATURE,
 )
 
-# Max number of back and forth with the LLM to generate a response
-MAX_TOOL_ITERATIONS = 10
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -50,6 +51,45 @@ async def async_setup_entry(
     """Set up conversation entities."""
     agent = YandexGPTConversationEntity(config_entry)
     async_add_entities([agent])
+
+
+def _convert_content(chat_content: conversation.Content) -> TextMessage:
+    if isinstance(chat_content, conversation.ToolResultContent):
+        raise TypeError(f"Unexpected content type: {type(chat_content)}")
+
+    return TextMessage(role=chat_content.role, text=str(chat_content.content))
+
+
+async def _transform_stream(
+    stream: AsyncGenerator[GPTModelResult, None],
+) -> AsyncGenerator[conversation.AssistantContentDeltaDict, None]:
+    """Transform YandexGPT stream into HA format."""
+
+    previous_text = ""
+    async for partial_result in stream:
+        LOGGER.debug("Received YandexGPT partial result: %s", partial_result)
+
+        for alternative in partial_result:
+            if alternative.status in (
+                AlternativeStatus.PARTIAL,
+                AlternativeStatus.FINAL,
+            ):
+                # Firsh chunk
+                if previous_text == "" and alternative.role:
+                    yield {"role": alternative.role}
+
+                # Only yield the new part of the text
+                new_text = alternative.text[len(previous_text) :]
+                if new_text:
+                    yield {"content": new_text}
+                    previous_text = alternative.text
+            elif alternative.status == AlternativeStatus.CONTENT_FILTER:
+                raise HomeAssistantError("The message got blocked by the ethics filter")
+            elif alternative.status == AlternativeStatus.TRUNCATED_FINAL:
+                LOGGER.warning("Response was truncated by YandexGPT")
+                new_text = alternative.text[len(previous_text) :]
+                if new_text:
+                    yield {"content": new_text}
 
 
 class YandexGPTConversationEntity(
@@ -63,10 +103,10 @@ class YandexGPTConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = entry
-        self.history: dict[str, list[TextMessage]] = {}
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
             manufacturer="Yandex",
             model="YandexGPT",
             entry_type=dr.DeviceEntryType.SERVICE,
@@ -81,106 +121,64 @@ class YandexGPTConversationEntity(
         """Return a list of supported languages."""
         return MATCH_ALL
 
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to Home Assistant."""
+        await super().async_added_to_hass()
+        assist_pipeline.async_migrate_engine(
+            self.hass, "conversation", self.entry.entry_id, self.entity_id
+        )
+        conversation.async_set_agent(self.hass, self.entry, self)
+        self.entry.async_on_unload(
+            self.entry.add_update_listener(self._async_entry_update_listener)
+        )
+
+    async def async_will_remove_from_hass(self) -> None:
+        """When entity will be removed from Home Assistant."""
+        conversation.async_unset_agent(self.hass, self.entry)
+        await super().async_will_remove_from_hass()
+
+    # FIXME: To be removed in Home Assistant 2025.4.0
+    #        https://github.com/home-assistant/core/pull/140125
     async def async_process(
         self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         """Process a sentence."""
+        with (
+            chat_session.async_get_chat_session(
+                self.hass, user_input.conversation_id
+            ) as session,
+            conversation.async_get_chat_log(self.hass, session, user_input) as chat_log,
+        ):
+            return await self._async_handle_message(user_input, chat_log)
+
+    async def _async_handle_message(
+        self,
+        user_input: conversation.ConversationInput,
+        chat_log: conversation.ChatLog,
+    ) -> conversation.ConversationResult:
+        """Process a conversation with YandexGPT."""
         settings = {**self.entry.data, **self.entry.options}
 
-        options = self.entry.options
-        intent_response = intent.IntentResponse(language=user_input.language)
-        llm_api: llm.APIInstance | None = None
-        user_name: str | None = None
-        llm_context = llm.LLMContext(
-            platform=DOMAIN,
-            context=user_input.context,
-            user_prompt=user_input.text,
-            language=user_input.language,
-            assistant=conversation.DOMAIN,
-            device_id=user_input.device_id,
-        )
-
-        if settings.get(CONF_LLM_HASS_API):
-            try:
-                llm_api = await llm.async_get_api(
-                    self.hass,
-                    settings[CONF_LLM_HASS_API],
-                    llm_context,
-                )
-            except HomeAssistantError as err:
-                LOGGER.error("Error getting LLM API: %s", err)
-                intent_response.async_set_error(
-                    intent.IntentResponseErrorCode.UNKNOWN,
-                    f"Error preparing LLM API: {err}",
-                )
-                return conversation.ConversationResult(
-                    response=intent_response, conversation_id=user_input.conversation_id
-                )
-
-        if user_input.conversation_id is None:
-            conversation_id = ulid.ulid_now()
-            messages = []
-
-        elif user_input.conversation_id in self.history:
-            conversation_id = user_input.conversation_id
-            messages = self.history[conversation_id]
-
-        else:
-            # Conversation IDs are ULIDs. We generate a new one if not provided.
-            # If an old OLID is passed in, we will generate a new one to indicate
-            # a new conversation was started. If the user picks their own, they
-            # want to track a conversation and we respect it.
-            try:
-                ulid.ulid_to_bytes(user_input.conversation_id)
-                conversation_id = ulid.ulid_now()
-            except ValueError:
-                conversation_id = user_input.conversation_id
-
-            messages = []
-
-        if (
-            user_input.context
-            and user_input.context.user_id
-            and (
-                user := await self.hass.auth.async_get_user(user_input.context.user_id)
-            )
-        ):
-            user_name = user.name
-
         try:
-            prompt_parts = [
-                template.Template(
-                    BASE_PROMPT_RU
-                    + options.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
-                    self.hass,
-                ).async_render(
-                    {
-                        "ha_name": self.hass.config.location_name,
-                        "user_name": user_name,
-                        "llm_context": llm_context,
-                    },
-                    parse_result=False,
-                )
-            ]
-        except TemplateError as err:
-            LOGGER.error("Error rendering prompt: %s", err)
-            intent_response.async_set_error(
-                intent.IntentResponseErrorCode.UNKNOWN,
-                f"Sorry, I had a problem with my template: {err}",
+            await chat_log.async_update_llm_data(
+                DOMAIN,
+                user_input,
+                settings.get(CONF_LLM_HASS_API),
+                settings.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
             )
-            return conversation.ConversationResult(
-                response=intent_response, conversation_id=conversation_id
-            )
+        except conversation.ConverseError as err:
+            return err.as_conversation_result()
 
-        if llm_api:
-            prompt_parts.append(llm_api.api_prompt)
+        client: AsyncYCloudML = self.entry.runtime_data
+        model_name = settings.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL).split("/")[0]
+        model_ver = settings.get(CONF_MODEL_VERSION, DEFAULT_MODEL_VERSION)
+        model_conf = {
+            "temperature": settings.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
+            "max_tokens": settings.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+        }
 
-        prompt = "\n".join(prompt_parts)
-
-        messages = [
-            TextMessage(role="system", text=prompt),
-            *messages[1:],
-            TextMessage(role="user", text=user_input.text),
+        messages: list[TextMessage] = [
+            _convert_content(content) for content in chat_log.content
         ]
 
         LOGGER.debug("Prompt: %s", messages)
@@ -189,44 +187,48 @@ class YandexGPTConversationEntity(
             {"messages": messages},
         )
 
-        client: AsyncYCloudML = self.entry.runtime_data
-        # model name and version were stored in a different format previously
-        model_name = options.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL).split("/")[0]
-        model_ver = options.get(CONF_MODEL_VERSION, DEFAULT_MODEL_VERSION)
-        model_conf = {
-            "temperature": options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
-            "max_tokens": options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
-        }
-
         try:
             model = client.models.completions(model_name, model_version=model_ver)
-            result = await self.run_completion(model.configure(**model_conf), messages)
+            configured_model = model.configure(**model_conf)
+
+            if settings.get(CONF_ASYNCHRONOUS_MODE, False):
+                operation = await configured_model.run_deferred(messages)
+                LOGGER.debug("Async operation ID: %s", operation.id)
+                result = await operation.wait(poll_timeout=300, poll_interval=0.5)
+
+                # Convert single result to stream format
+                async def single_result_stream():
+                    yield result
+
+                response_stream = single_result_stream()
+            else:
+                response_stream = configured_model.run_stream(messages)
+
         except Exception as err:
-            LOGGER.exception(err)
+            LOGGER.exception("Error talking to Yandex Cloud: %s", err)
+            raise HomeAssistantError(
+                f"Error talking to Yandex Cloud: {err}"
+            ) from err
 
-            intent_response.async_set_error(
-                intent.IntentResponseErrorCode.UNKNOWN,
-                f"Sorry, I had a problem talking to YandexGPT: {err}",
-            )
-            return conversation.ConversationResult(
-                response=intent_response, conversation_id=conversation_id
-            )
+        async for content in chat_log.async_add_delta_content_stream(
+            user_input.agent_id,
+            _transform_stream(response_stream),
+        ):
+            if isinstance(content, conversation.AssistantContent):
+                messages.append(_convert_content(content))
 
-        LOGGER.debug("Response %s", result)
-
-        messages.append(TextMessage(role=result[0].role, text=result[0].text))
-        self.history[conversation_id] = messages
-
-        # Create intent response
-        intent_response.async_set_speech(result[0].text)
+        intent_response = intent.IntentResponse(language=user_input.language)
+        assert type(chat_log.content[-1]) is conversation.AssistantContent
+        intent_response.async_set_speech(chat_log.content[-1].content or "")
         return conversation.ConversationResult(
-            response=intent_response, conversation_id=conversation_id
+            response=intent_response,
+            conversation_id=chat_log.conversation_id,
+            # FIXME: Added in Home Assistant 2025.4.0
+            # continue_conversation=chat_log.continue_conversation,
         )
 
-    async def run_completion(self, model, messages):
-        if not self.entry.options.get(CONF_ASYNCHRONOUS_MODE, False):
-            return await model.run(messages)
-
-        operation = await model.run_deferred(messages)
-        LOGGER.debug("Async operation ID: %s", operation.id)
-        return await operation.wait(poll_timeout=300, poll_interval=0.5)
+    async def _async_entry_update_listener(
+        self, hass: HomeAssistant, entry: ConfigEntry
+    ) -> None:
+        """Handle options update."""
+        await hass.config_entries.async_reload(entry.entry_id)
