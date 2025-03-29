@@ -16,7 +16,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import chat_session
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -158,20 +157,6 @@ class YandexGPTConversationEntity(
         conversation.async_unset_agent(self.hass, self.entry)
         await super().async_will_remove_from_hass()
 
-    # FIXME: To be removed in Home Assistant 2025.4.0
-    #        https://github.com/home-assistant/core/pull/140125
-    async def async_process(
-        self, user_input: conversation.ConversationInput
-    ) -> conversation.ConversationResult:
-        """Process a sentence."""
-        with (
-            chat_session.async_get_chat_session(
-                self.hass, user_input.conversation_id
-            ) as session,
-            conversation.async_get_chat_log(self.hass, session, user_input) as chat_log,
-        ):
-            return await self._async_handle_message(user_input, chat_log)
-
     async def _async_handle_message(
         self,
         user_input: conversation.ConversationInput,
@@ -245,8 +230,7 @@ class YandexGPTConversationEntity(
         return conversation.ConversationResult(
             response=intent_response,
             conversation_id=chat_log.conversation_id,
-            # FIXME: Added in Home Assistant 2025.4.0
-            # continue_conversation=chat_log.continue_conversation,
+            continue_conversation=chat_log.continue_conversation,
         )
 
     async def _async_entry_update_listener(
