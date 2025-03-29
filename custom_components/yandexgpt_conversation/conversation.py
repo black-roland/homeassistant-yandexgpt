@@ -66,35 +66,51 @@ async def _transform_stream(
 ) -> AsyncGenerator[conversation.AssistantContentDeltaDict, None]:
     """Transform YandexGPT stream into HA format."""
 
-    previous_text = ""
-    async for partial_result in stream:
-        LOGGER.debug("Received YandexGPT partial result: %s", partial_result)
+    streamed_text = ""
+    prev_text = ""
+    async for curr_chunk in stream:
+        LOGGER.debug("Received partial result: %s", curr_chunk)
 
-        for alternative in partial_result:
-            if alternative.status in (
-                AlternativeStatus.PARTIAL,
-                AlternativeStatus.FINAL,
-            ):
-                # Firsh chunk
-                if previous_text == "" and alternative.role:
-                    yield {"role": alternative.role}
+        alt = curr_chunk.alternatives[0]
+        text, status = alt.text, alt.status
 
-                # Only yield the new part of the text
-                new_text = alternative.text[len(previous_text) :]
-                if new_text:
-                    yield {"content": new_text}
-                    previous_text = alternative.text
-            elif alternative.status == AlternativeStatus.CONTENT_FILTER:
-                LOGGER.warning("The message got blocked by the ethics filter")
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="ethics_filter",
-                )
-            elif alternative.status == AlternativeStatus.TRUNCATED_FINAL:
+        if status in (AlternativeStatus.FINAL, AlternativeStatus.TRUNCATED_FINAL):
+            if status == AlternativeStatus.TRUNCATED_FINAL:
                 LOGGER.warning("Response was truncated by YandexGPT")
-                new_text = alternative.text[len(previous_text) :]
-                if new_text:
-                    yield {"content": new_text}
+            delta = text[len(streamed_text) :]
+            yield {"content": delta}
+            # In case a new message appears after this on is finalized
+            prev_text = ""
+            streamed_text = ""
+            continue
+
+        if status == AlternativeStatus.CONTENT_FILTER:
+            LOGGER.warning("The message got blocked by the ethics filter")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="ethics_filter",
+            )
+
+        # First chunk - just store and send role
+        if prev_text == "":
+            yield {"role": "assistant"}
+            prev_text = text
+            continue
+
+        if status != AlternativeStatus.PARTIAL:
+            continue
+
+        # Chunks are shifted by 1: extract a substring from the current
+        # chunk using the length of the previous chunk.
+        #
+        # This is a workaround to avoid issues with emojis and other 4-byte
+        # characters. In streaming mode, LLM-generated text could be split
+        # mid-character, breaking 4-byte sequences:
+        # https://github.com/black-roland/homeassistant-yandexgpt/issues/17
+        delta = text[len(streamed_text) : len(prev_text)]
+        yield {"content": delta}
+        streamed_text = prev_text
+        prev_text = text
 
 
 class YandexGPTConversationEntity(
