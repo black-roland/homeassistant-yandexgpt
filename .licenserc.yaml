@@ -1,0 +1,8 @@
+header:
+  license:
+    spdx-id: MPL-2.0
+
+  paths:
+    - 'custom_components/**/*.py'
+
+  comment: on-failure
