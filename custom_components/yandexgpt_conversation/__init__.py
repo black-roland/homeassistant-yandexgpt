@@ -23,7 +23,15 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.typing import ConfigType
 from yandex_cloud_ml_sdk import AsyncYCloudML
 
-from .const import ATTR_FILENAME, ATTR_PROMPT, ATTR_SEED, CONF_FOLDER_ID, DOMAIN
+from .const import (
+    ATTR_FILENAME,
+    ATTR_PROMPT,
+    ATTR_SEED,
+    CONF_ENABLE_SERVER_DATA_LOGGING,
+    CONF_FOLDER_ID,
+    DEFAULT_ENABLE_SERVER_DATA_LOGGING,
+    DOMAIN,
+)
 from .yandexart import YandexArt
 
 SERVICE_GENERATE_IMAGE = "generate_image"
@@ -93,7 +101,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     settings = {**entry.data, **entry.options}
 
     entry.runtime_data = AsyncYCloudML(
-        folder_id=settings[CONF_FOLDER_ID], auth=settings[CONF_API_KEY]
+        folder_id=settings[CONF_FOLDER_ID],
+        auth=settings[CONF_API_KEY],
+        enable_server_data_logging=settings.get(
+            CONF_ENABLE_SERVER_DATA_LOGGING, DEFAULT_ENABLE_SERVER_DATA_LOGGING
+        ),
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

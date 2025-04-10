@@ -32,6 +32,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_ASYNCHRONOUS_MODE,
     CONF_CHAT_MODEL,
+    CONF_ENABLE_SERVER_DATA_LOGGING,
     CONF_FOLDER_ID,
     CONF_MAX_TOKENS,
     CONF_MODEL_VERSION,
@@ -39,6 +40,7 @@ from .const import (
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
     DEFAULT_CHAT_MODEL,
+    DEFAULT_ENABLE_SERVER_DATA_LOGGING,
     DEFAULT_INSTRUCTIONS_PROMPT_RU,
     DEFAULT_MODEL_VERSION,
     DOMAIN,
@@ -208,6 +210,12 @@ def yandexgpt_config_option_schema(
         ): SelectSelector(
             SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=model_names)
         ),
+        vol.Required(
+            CONF_ENABLE_SERVER_DATA_LOGGING,
+            default=options.get(
+                CONF_ENABLE_SERVER_DATA_LOGGING, DEFAULT_ENABLE_SERVER_DATA_LOGGING
+            ),
+        ): bool,
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
         ): bool,

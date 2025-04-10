@@ -25,6 +25,7 @@
           "prompt": "Instructions",
           "llm_hass_api": "Access to devices",
           "chat_model": "Model",
+          "enable_server_data_logging": "Server data logging",
           "recommended": "Recommended model settings",
           "model_version": "Version",
           "temperature": "Temperature",
@@ -33,7 +34,8 @@
         },
         "data_description": {
           "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
-          "prompt": "Instruct how the LLM should respond. This can be a template."
+          "prompt": "Instruct how the LLM should respond. This can be a template.",
+          "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers"
         }
       }
     }
