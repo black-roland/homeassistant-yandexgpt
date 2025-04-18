@@ -3,23 +3,21 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^custom_components/.+/manifest\\.json$"
-      ],
+      "fileMatch": ["^custom_components/.+/manifest\\.json$"],
       "matchStrings": [
         "[\\[ ](\"(?<depName>[^\"]+)(?<currentValue>(==|>=|<=)[0-9\\.]+)\"[,\\s]?)[,\\]]"
       ],
-      "versioningTemplate": "python",
+      "versioningTemplate": "pep440",
       "depNameTemplate": "{{depName}}",
       "datasourceTemplate": "pypi"
     }
   ],
   "packageRules": [
     {
-      "matchDatasources": [
-        "pypi"
-      ],
+      "matchDatasources": ["pypi"],
       "groupName": "Integration dependency"
     }
-  ]
+  ],
+  "rangeStrategy": "pin",
+  "reviewersFromCodeOwners": true
 }
