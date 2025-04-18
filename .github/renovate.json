@@ -9,7 +9,7 @@
       "matchStrings": [
         "[\\[ ](\"(?<depName>[^\"]+)(?<currentValue>(==|>=|<=)[0-9\\.]+)\"[,\\s]?)[,\\]]"
       ],
-      "versioningTemplate": "python",
+      "versioningTemplate": "pep440",
       "depNameTemplate": "{{depName}}",
       "datasourceTemplate": "pypi"
     }
