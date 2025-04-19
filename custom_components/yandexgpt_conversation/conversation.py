@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
-from typing import Literal
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from typing import Any, Literal
 
 from grpc.aio import AioRpcError
 from homeassistant.components import assist_pipeline, conversation
@@ -16,15 +16,17 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import intent
+from homeassistant.helpers import device_registry as dr, intent, llm
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from yandex_cloud_ml_sdk import AsyncYCloudML
-from yandex_cloud_ml_sdk._models.completions.message import TextMessage
+from yandex_cloud_ml_sdk._types.message import TextMessage
 from yandex_cloud_ml_sdk._models.completions.result import (
     AlternativeStatus,
     GPTModelResult,
 )
+from yandex_cloud_ml_sdk._tools.tool import FunctionTool
+from yandex_cloud_ml_sdk._tools.tool_call import AsyncToolCall
+from voluptuous_openapi import convert
 
 from .const import (
     CONF_ASYNCHRONOUS_MODE,
@@ -42,6 +44,8 @@ from .const import (
     RECOMMENDED_TEMPERATURE,
 )
 
+MAX_TOOL_ITERATIONS = 10
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -53,24 +57,67 @@ async def async_setup_entry(
     async_add_entities([agent])
 
 
-def _convert_content(chat_content: conversation.Content) -> TextMessage:
+def _format_tool(
+    tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
+) -> FunctionTool:
+    """Format tool specification."""
+    # client.tools.function seems to have broken typings,
+    # use FunctionTool directly
+    return FunctionTool(
+        name=tool.name,
+        description=tool.description,
+        parameters=convert(tool.parameters, custom_serializer=custom_serializer),
+    )
+
+
+def _convert_content(
+    chat_content: conversation.Content | conversation.ToolResultContent,
+) -> TextMessage | dict[str, Any]:
+    """Convert Home Assistant conversation content to YandexGPT message format."""
     if isinstance(chat_content, conversation.ToolResultContent):
-        raise TypeError(f"Unexpected content type: {type(chat_content)}")
+        # TODO: Array is supported here by YandexGPT. Is it usefull in our case?
+        return {
+            "role": chat_content.role,
+            "tool_results": [
+                {
+                    "name": chat_content.tool_name,
+                    "content": chat_content.tool_result,
+                }
+            ],
+        }
+
+    if (
+        isinstance(chat_content, conversation.AssistantContent)
+        and chat_content.tool_calls
+    ):
+        return {
+            "role": chat_content.role,
+            "tool_call_list": {
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": tool_call.tool_name,
+                            "arguments": tool_call.tool_args,
+                        }
+                    }
+                    for tool_call in chat_content.tool_calls
+                ]
+            },
+        }
 
     return TextMessage(role=chat_content.role, text=str(chat_content.content))
 
 
 async def _transform_stream(
-    stream: AsyncGenerator[GPTModelResult, None],
+    stream: AsyncIterator[GPTModelResult[AsyncToolCall]],
 ) -> AsyncGenerator[conversation.AssistantContentDeltaDict, None]:
     """Transform YandexGPT stream into HA format."""
-
     streamed_text = ""
     prev_text = ""
-    async for curr_chunk in stream:
-        LOGGER.debug("Received partial result: %s", curr_chunk)
+    async for event in stream:
+        LOGGER.debug("Received partial result: %s", event)
 
-        alt = curr_chunk.alternatives[0]
+        alt = event.alternatives[0]
         text, status = alt.text, alt.status
 
         if status in (AlternativeStatus.FINAL, AlternativeStatus.TRUNCATED_FINAL):
@@ -78,7 +125,7 @@ async def _transform_stream(
                 LOGGER.warning("Response was truncated by YandexGPT")
             delta = text[len(streamed_text) :]
             yield {"content": delta}
-            # In case a new message appears after this on is finalized
+            # In case a new message appears after this one is finalized
             prev_text = ""
             streamed_text = ""
             continue
@@ -89,6 +136,18 @@ async def _transform_stream(
                 translation_domain=DOMAIN,
                 translation_key="ethics_filter",
             )
+
+        if status == AlternativeStatus.TOOL_CALLS and alt.tool_calls:
+            tool_calls: list[llm.ToolInput] = [
+                llm.ToolInput(
+                    # broken typings?
+                    tool_name=tool_call.function.name,  # type: ignore[operator]
+                    tool_args=tool_call.function.arguments,  # type: ignore[operator]
+                )
+                for tool_call in alt.tool_calls
+            ]
+            yield {"tool_calls": tool_calls}
+            continue
 
         # First chunk - just store and send role
         if prev_text == "":
@@ -113,7 +172,7 @@ async def _transform_stream(
 
 
 class YandexGPTConversationEntity(
-    conversation.ConversationEntity, conversation.AbstractConversationAgent
+    conversation.ConversationEntity, conversation.AbstractConversationAgent  # type: ignore
 ):
     """YandexGPT conversation agent."""
 
@@ -183,9 +242,16 @@ class YandexGPTConversationEntity(
             "max_tokens": settings.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
-        messages: list[TextMessage] = [
+        # TODO: Fix typings
+        messages: list[TextMessage | dict[str, Any]] = [
             _convert_content(content) for content in chat_log.content
         ]
+
+        if chat_log.llm_api:
+            model_conf["tools"] = [
+                _format_tool(tool, chat_log.llm_api.custom_serializer)
+                for tool in chat_log.llm_api.tools
+            ]
 
         LOGGER.debug("Prompt: %s", messages)
         trace.async_conversation_trace_append(
@@ -210,12 +276,15 @@ class YandexGPTConversationEntity(
             else:
                 response_stream = configured_model.run_stream(messages)
 
-            async for content in chat_log.async_add_delta_content_stream(
-                user_input.agent_id,
-                _transform_stream(response_stream),
-            ):
-                if isinstance(content, conversation.AssistantContent):
+            for _iteration in range(MAX_TOOL_ITERATIONS):
+                async for content in chat_log.async_add_delta_content_stream(
+                    user_input.agent_id,
+                    _transform_stream(response_stream),
+                ):
                     messages.append(_convert_content(content))
+
+                if not chat_log.unresponded_tool_results:
+                    break
         except AioRpcError as err:
             LOGGER.exception("Error talking to Yandex Cloud: %s", err)
             raise HomeAssistantError(
