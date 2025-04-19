@@ -15,7 +15,7 @@
   "packageRules": [
     {
       "matchDatasources": ["pypi"],
-      "groupName": "Integration dependency"
+      "groupName": "integration requirements"
     }
   ],
   "rangeStrategy": "pin",
