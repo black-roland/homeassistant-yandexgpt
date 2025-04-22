@@ -6,8 +6,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, Literal
+from typing import Literal
 
 from grpc.aio import AioRpcError
 from homeassistant.components import assist_pipeline, conversation
@@ -16,12 +15,10 @@ from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import intent, llm
+from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from voluptuous_openapi import convert
 from yandex_cloud_ml_sdk import AsyncYCloudML
 from yandex_cloud_ml_sdk._models.completions.message import CompletionsMessageType
-from yandex_cloud_ml_sdk._tools.tool import FunctionTool
 
 from .const import (
     CONF_ASYNCHRONOUS_MODE,
@@ -51,19 +48,6 @@ async def async_setup_entry(
     """Set up conversation entities."""
     agent = YandexGPTConversationEntity(config_entry)
     async_add_entities([agent])
-
-
-def _format_tool(
-    tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
-) -> FunctionTool:
-    """Format tool specification."""
-    # client.tools.function seems to have broken typings,
-    # use FunctionTool directly
-    return FunctionTool(
-        name=tool.name,
-        description=tool.description,
-        parameters=convert(tool.parameters, custom_serializer=custom_serializer),
-    )
 
 
 class YandexGPTConversationEntity(
@@ -144,7 +128,7 @@ class YandexGPTConversationEntity(
 
         if chat_log.llm_api:
             model_conf["tools"] = [
-                _format_tool(tool, chat_log.llm_api.custom_serializer)
+                ContentConverter.format_tool(tool, chat_log.llm_api.custom_serializer)
                 for tool in chat_log.llm_api.tools
             ]
 

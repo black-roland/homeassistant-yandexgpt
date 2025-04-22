@@ -5,20 +5,20 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import json
-from collections.abc import AsyncGenerator, AsyncIterator
-from typing import Iterable, Optional, cast
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from typing import Any, Iterable, Optional, cast
 
 from homeassistant.components import conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
-from yandex_cloud_ml_sdk._models.completions.message import CompletionsMessageType
-from yandex_cloud_ml_sdk._models.completions.message import (
-    FunctionResultMessageDict as ToolResultsMessageType,
-)
-from yandex_cloud_ml_sdk._models.completions.result import (
-    AlternativeStatus,
-    GPTModelResult,
-)
+from voluptuous_openapi import convert
+from yandex_cloud_ml_sdk._models.completions.message import \
+    CompletionsMessageType
+from yandex_cloud_ml_sdk._models.completions.message import \
+    FunctionResultMessageDict as ToolResultsMessageType
+from yandex_cloud_ml_sdk._models.completions.result import (AlternativeStatus,
+                                                            GPTModelResult)
+from yandex_cloud_ml_sdk._tools.tool import FunctionTool
 from yandex_cloud_ml_sdk._tools.tool_call import AsyncToolCall
 
 from .const import DOMAIN, LOGGER
@@ -51,7 +51,7 @@ class StreamTransformer:
             if status in (AlternativeStatus.FINAL, AlternativeStatus.TRUNCATED_FINAL):
                 if status == AlternativeStatus.TRUNCATED_FINAL:
                     LOGGER.warning("Response was truncated by YandexGPT")
-                delta = text[len(streamed_text) :]
+                delta = text[len(streamed_text):]
                 yield {"content": delta}
                 # Reset for potential new messages
                 prev_text = ""
@@ -92,7 +92,7 @@ class StreamTransformer:
             # Calculate delta between adjacent chunks to handle multi-byte characters.
             # Workaround for emoji/4-byte character streaming issues:
             # https://github.com/black-roland/homeassistant-yandexgpt/issues/17
-            delta = text[len(streamed_text) : len(prev_text)]
+            delta = text[len(streamed_text): len(prev_text)]
             yield {"content": delta}
             streamed_text = prev_text
             prev_text = text
@@ -113,28 +113,20 @@ class ContentConverter:
             if isinstance(content, conversation.ToolResultContent):
                 # Group tool results into a single message
                 previous = cast(ToolResultsMessageType, messages[-1])
-                if "tool_results" in previous and isinstance(
-                    previous["tool_results"], list
-                ):
-                    previous["tool_results"].append(
-                        {
-                            "name": content.tool_name,
-                            "content": json.dumps(content.tool_result),
-                        }
-                    )
+                if "tool_results" in previous and isinstance(previous["tool_results"], list):
+                    previous["tool_results"].append({
+                        "name": content.tool_name,
+                        "content": json.dumps(content.tool_result),
+                    })
                     continue
 
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "tool_results": [
-                            {
-                                "name": content.tool_name,
-                                "content": json.dumps(content.tool_result),
-                            }
-                        ],
-                    }
-                )
+                messages.append({
+                    "role": "assistant",
+                    "tool_results": [{
+                        "name": content.tool_name,
+                        "content": json.dumps(content.tool_result),
+                    }],
+                })
 
             elif (
                 isinstance(content, conversation.AssistantContent)
@@ -149,9 +141,24 @@ class ContentConverter:
                 messages.append(self._stream_transformer.tool_calls_message)
 
             elif content.content:
-                messages.append({"role": content.role, "text": content.content})
+                messages.append(
+                    {"role": content.role, "text": content.content})
 
             else:
                 raise TypeError(f"Unexpected content type: {type(content)}")
 
         return messages
+
+    @staticmethod
+    def format_tool(
+        tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
+    ) -> FunctionTool:
+        """Convert HA tool to YandexGPT format."""
+        # client.tools.function seems to have broken typings,
+        # use FunctionTool directly
+        return FunctionTool(
+            name=tool.name,
+            description=tool.description,
+            parameters=convert(
+                tool.parameters, custom_serializer=custom_serializer),
+        )
