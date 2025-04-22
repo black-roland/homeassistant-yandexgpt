@@ -138,7 +138,7 @@ class YandexGPTConversationEntity(
         }
 
         content_converter = ContentConverter()
-        messages: list[CompletionsMessageType] = content_converter.convern_conversation(
+        messages: list[CompletionsMessageType] = content_converter.to_yandexgpt_api(
             chat_log.content
         )
 
@@ -170,11 +170,17 @@ class YandexGPTConversationEntity(
                 stream_transformer = StreamTransformer(response_stream)
                 content_converter = ContentConverter(stream_transformer)
 
-                async for content in chat_log.async_add_delta_content_stream(
-                    user_input.agent_id,
-                    stream_transformer.transform_stream(),
-                ):
-                    messages.append(content_converter.convert_content(content))
+                messages.extend(
+                    content_converter.to_yandexgpt_api(
+                        [
+                            content
+                            async for content in chat_log.async_add_delta_content_stream(
+                                user_input.agent_id,
+                                stream_transformer.to_chatlog_api(),
+                            )
+                        ]
+                    )
+                )
 
                 if not chat_log.unresponded_tool_results:
                     break
