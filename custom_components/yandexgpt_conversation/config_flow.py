@@ -10,43 +10,26 @@ from types import MappingProxyType
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import (
-    ConfigEntry,
-    ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlow,
-)
+from homeassistant.config_entries import (ConfigEntry, ConfigFlow,
+                                          ConfigFlowResult, OptionsFlow)
 from homeassistant.const import CONF_API_KEY, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
-from homeassistant.helpers.selector import (
-    NumberSelector,
-    NumberSelectorConfig,
-    SelectOptionDict,
-    SelectSelector,
-    SelectSelectorConfig,
-    SelectSelectorMode,
-    TemplateSelector,
-)
+from homeassistant.helpers.selector import (NumberSelector,
+                                            NumberSelectorConfig,
+                                            SelectOptionDict, SelectSelector,
+                                            SelectSelectorConfig,
+                                            SelectSelectorMode,
+                                            TemplateSelector)
 
-from .const import (
-    CONF_ASYNCHRONOUS_MODE,
-    CONF_CHAT_MODEL,
-    CONF_ENABLE_SERVER_DATA_LOGGING,
-    CONF_FOLDER_ID,
-    CONF_MAX_TOKENS,
-    CONF_MODEL_VERSION,
-    CONF_PROMPT,
-    CONF_RECOMMENDED,
-    CONF_TEMPERATURE,
-    DEFAULT_CHAT_MODEL,
-    DEFAULT_ENABLE_SERVER_DATA_LOGGING,
-    DEFAULT_INSTRUCTIONS_PROMPT_RU,
-    DEFAULT_MODEL_VERSION,
-    DOMAIN,
-    RECOMMENDED_MAX_TOKENS,
-    RECOMMENDED_TEMPERATURE,
-)
+from .const import (ASSIST_PARTIALLY_SUPPORTED_MODELS,
+                    ASSIST_UNSUPPORTED_MODELS, CONF_ASYNCHRONOUS_MODE,
+                    CONF_CHAT_MODEL, CONF_ENABLE_SERVER_DATA_LOGGING,
+                    CONF_FOLDER_ID, CONF_MAX_TOKENS, CONF_MODEL_VERSION,
+                    CONF_PROMPT, CONF_RECOMMENDED, CONF_TEMPERATURE,
+                    DEFAULT_CHAT_MODEL, DEFAULT_ENABLE_SERVER_DATA_LOGGING,
+                    DEFAULT_INSTRUCTIONS_PROMPT_RU, DEFAULT_MODEL_VERSION,
+                    DOMAIN, RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -121,9 +104,10 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
+        self.errors: dict[str, str] = {}
         self.last_rendered_recommended = config_entry.options.get(
-            CONF_RECOMMENDED, False
-        )
+            CONF_RECOMMENDED, False)
+        self.last_selected_model: str | None = None
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -132,15 +116,17 @@ class YandexGPTOptionsFlow(OptionsFlow):
         options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
 
         if user_input is not None:
+            self._validate_selected_model(user_input)
+
             if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
                 if user_input[CONF_LLM_HASS_API] == "none":
                     user_input.pop(CONF_LLM_HASS_API)
-                return self.async_create_entry(title="", data=user_input)
+                if not self.errors:
+                    return self.async_create_entry(title="", data=user_input)
 
             # Re-render the options again,
             # now with the recommended options shown/hidden
             self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
-
             options = {
                 CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
                 CONF_PROMPT: user_input[CONF_PROMPT],
@@ -164,7 +150,27 @@ class YandexGPTOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
+            errors=self.errors,
         )
+
+    def _validate_selected_model(self, user_input: dict[str, Any]) -> None:
+        """Validate the selected model."""
+        is_assist_enabled = user_input.get(CONF_LLM_HASS_API) != "none"
+        if not is_assist_enabled:
+            return
+
+        selected_model = user_input.get(CONF_CHAT_MODEL)
+        if selected_model in ASSIST_UNSUPPORTED_MODELS:
+            # Block completely for unsupported models
+            self.errors[CONF_CHAT_MODEL] = "model_not_supported_for_assist"
+        elif selected_model in ASSIST_PARTIALLY_SUPPORTED_MODELS:
+            # Show warning but allow continuing if form is resubmitted
+            if self.last_selected_model == selected_model:
+                self.errors.pop(CONF_CHAT_MODEL, None)
+            else:
+                self.errors[CONF_CHAT_MODEL] = "model_partially_supported_for_assist"
+
+        self.last_selected_model = selected_model
 
 
 def yandexgpt_config_option_schema(
@@ -200,14 +206,16 @@ def yandexgpt_config_option_schema(
             description={"suggested_value": options.get(CONF_LLM_HASS_API)},
             default="none",
         ): SelectSelector(
-            SelectSelectorConfig(options=hass_apis, translation_key=CONF_LLM_HASS_API)
+            SelectSelectorConfig(
+                options=hass_apis, translation_key=CONF_LLM_HASS_API)
         ),
         vol.Optional(
             CONF_CHAT_MODEL,
             description={"suggested_value": options.get(CONF_CHAT_MODEL)},
             default=DEFAULT_CHAT_MODEL,
         ): SelectSelector(
-            SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=model_names)
+            SelectSelectorConfig(
+                mode=SelectSelectorMode.DROPDOWN, options=model_names)
         ),
         vol.Required(
             CONF_ENABLE_SERVER_DATA_LOGGING,
@@ -233,7 +241,8 @@ def yandexgpt_config_option_schema(
         {
             vol.Optional(
                 CONF_MODEL_VERSION,
-                description={"suggested_value": options.get(CONF_MODEL_VERSION)},
+                description={"suggested_value": options.get(
+                    CONF_MODEL_VERSION)},
                 default=DEFAULT_MODEL_VERSION,
             ): SelectSelector(
                 SelectSelectorConfig(
@@ -247,7 +256,8 @@ def yandexgpt_config_option_schema(
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
             vol.Optional(
                 CONF_ASYNCHRONOUS_MODE,
-                description={"suggested_value": options.get(CONF_ASYNCHRONOUS_MODE)},
+                description={"suggested_value": options.get(
+                    CONF_ASYNCHRONOUS_MODE)},
                 default=options.get(CONF_ASYNCHRONOUS_MODE, False),
             ): bool,
             vol.Optional(

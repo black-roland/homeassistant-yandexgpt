@@ -29,6 +29,9 @@ DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистен
 Отвечай простым текстом, кратко и по существу.
 """
 
+ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
+ASSIST_PARTIALLY_SUPPORTED_MODELS = ["llama", "yandexgpt-lite"]
+
 ATTR_FILENAME = "file_name"
 ATTR_SEED = "seed"
 ATTR_PROMPT = "prompt"
