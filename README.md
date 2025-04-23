@@ -43,6 +43,12 @@ TLDR: Добавьте интеграцию, используя голубые �
   <img src="https://github.com/user-attachments/assets/5fe01201-a2b7-41e7-b8a5-4ee42e4fdc4d" height="200px" alt="Андрей" />
 <p>
 
+## Информация
+
+Это независимая интеграция, разработанная сообществом. Я не связан с Яндексом или Яндекс Облаком. YandexGPT и YandexART — это сервисы, предоставляемые Яндекс Облаком.
+
+Данная интеграция не является официальным продуктом Яндекса и не поддерживается Яндексом.
+
 ---
 
 # YandexGPT integration for Home Assistant
@@ -63,3 +69,9 @@ YandexGPT is a cloud service. Fees are charged according to Yandex Cloud tariffs
 ## Set up
 
 Use blue buttons above to install and configure the integration. Please check out the official documentation on how to retrieve [folder ID](https://yandex.cloud/en/docs/resource-manager/operations/folder/get-id) and [API key](https://yandex.cloud/en/docs/iam/operations/api-key/create). For a service account it's required to set the following roles: `ai.languageModels.user` and `ai.imageGeneration.user`.
+
+## Notice
+
+This is an independent community-developed integration. I'm not affiliated with Yandex or Yandex Cloud in any way. YandexGPT and YandexART are services provided by Yandex Cloud.
+
+This integration is not an official Yandex product and is not supported by Yandex.
