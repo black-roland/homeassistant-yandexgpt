@@ -26,8 +26,11 @@ RECOMMENDED_TEMPERATURE = 0.6
 
 DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистент для Home Assistant.
 Отвечай на вопросы правдиво.
-Отвечай простым текстом, без вводных фраз и объяснений. Не усложняй и отвечай по сути.
+Отвечай простым текстом, кратко и по существу.
 """
+
+ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
+ASSIST_PARTIALLY_SUPPORTED_MODELS = ["llama", "yandexgpt-lite"]
 
 ATTR_FILENAME = "file_name"
 ATTR_SEED = "seed"

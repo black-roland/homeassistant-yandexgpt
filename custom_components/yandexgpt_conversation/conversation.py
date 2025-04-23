@@ -6,12 +6,10 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 from typing import Literal
 
 from grpc.aio import AioRpcError
 from homeassistant.components import assist_pipeline, conversation
-from homeassistant.components.conversation import trace
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
@@ -20,11 +18,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from yandex_cloud_ml_sdk import AsyncYCloudML
-from yandex_cloud_ml_sdk._models.completions.message import TextMessage
-from yandex_cloud_ml_sdk._models.completions.result import (
-    AlternativeStatus,
-    GPTModelResult,
-)
+from yandex_cloud_ml_sdk._models.completions.message import CompletionsMessageType
 
 from .const import (
     CONF_ASYNCHRONOUS_MODE,
@@ -41,6 +35,9 @@ from .const import (
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
 )
+from .mappers import ContentConverter, StreamTransformer
+
+MAX_TOOL_ITERATIONS = 10
 
 
 async def async_setup_entry(
@@ -53,67 +50,8 @@ async def async_setup_entry(
     async_add_entities([agent])
 
 
-def _convert_content(chat_content: conversation.Content) -> TextMessage:
-    if isinstance(chat_content, conversation.ToolResultContent):
-        raise TypeError(f"Unexpected content type: {type(chat_content)}")
-
-    return TextMessage(role=chat_content.role, text=str(chat_content.content))
-
-
-async def _transform_stream(
-    stream: AsyncGenerator[GPTModelResult, None],
-) -> AsyncGenerator[conversation.AssistantContentDeltaDict, None]:
-    """Transform YandexGPT stream into HA format."""
-
-    streamed_text = ""
-    prev_text = ""
-    async for curr_chunk in stream:
-        LOGGER.debug("Received partial result: %s", curr_chunk)
-
-        alt = curr_chunk.alternatives[0]
-        text, status = alt.text, alt.status
-
-        if status in (AlternativeStatus.FINAL, AlternativeStatus.TRUNCATED_FINAL):
-            if status == AlternativeStatus.TRUNCATED_FINAL:
-                LOGGER.warning("Response was truncated by YandexGPT")
-            delta = text[len(streamed_text) :]
-            yield {"content": delta}
-            # In case a new message appears after this on is finalized
-            prev_text = ""
-            streamed_text = ""
-            continue
-
-        if status == AlternativeStatus.CONTENT_FILTER:
-            LOGGER.warning("The message got blocked by the ethics filter")
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="ethics_filter",
-            )
-
-        # First chunk - just store and send role
-        if prev_text == "":
-            yield {"role": "assistant"}
-            prev_text = text
-            continue
-
-        if status != AlternativeStatus.PARTIAL:
-            continue
-
-        # Chunks are shifted by 1: extract a substring from the current
-        # chunk using the length of the previous chunk.
-        #
-        # This is a workaround to avoid issues with emojis and other 4-byte
-        # characters. In streaming mode, LLM-generated text could be split
-        # mid-character, breaking 4-byte sequences:
-        # https://github.com/black-roland/homeassistant-yandexgpt/issues/17
-        delta = text[len(streamed_text) : len(prev_text)]
-        yield {"content": delta}
-        streamed_text = prev_text
-        prev_text = text
-
-
 class YandexGPTConversationEntity(
-    conversation.ConversationEntity, conversation.AbstractConversationAgent
+    conversation.ConversationEntity, conversation.AbstractConversationAgent  # type: ignore
 ):
     """YandexGPT conversation agent."""
 
@@ -183,45 +121,65 @@ class YandexGPTConversationEntity(
             "max_tokens": settings.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
-        messages: list[TextMessage] = [
-            _convert_content(content) for content in chat_log.content
-        ]
-
-        LOGGER.debug("Prompt: %s", messages)
-        trace.async_conversation_trace_append(
-            trace.ConversationTraceEventType.AGENT_DETAIL,
-            {"messages": messages},
+        content_converter = ContentConverter()
+        messages: list[CompletionsMessageType] = content_converter.to_yandexgpt_api(
+            chat_log.content
         )
+
+        if chat_log.llm_api:
+            model_conf["tools"] = [
+                ContentConverter.format_tool(tool, chat_log.llm_api.custom_serializer)
+                for tool in chat_log.llm_api.tools
+            ]
 
         try:
             model = client.models.completions(model_name, model_version=model_ver)
             configured_model = model.configure(**model_conf)
 
-            if settings.get(CONF_ASYNCHRONOUS_MODE, False):
-                operation = await configured_model.run_deferred(messages)
-                LOGGER.debug("Async operation ID: %s", operation.id)
-                result = await operation.wait(poll_timeout=300, poll_interval=0.5)
+            for _iteration in range(MAX_TOOL_ITERATIONS):
+                LOGGER.debug("Prompt: %s", messages)
 
-                # Convert single result to stream format
-                async def single_result_stream():
-                    yield result
+                if settings.get(CONF_ASYNCHRONOUS_MODE, False):
+                    operation = await configured_model.run_deferred(messages)
+                    LOGGER.debug("Async operation ID: %s", operation.id)
+                    result = await operation.wait(poll_timeout=300, poll_interval=0.5)
 
-                response_stream = single_result_stream()
-            else:
-                response_stream = configured_model.run_stream(messages)
+                    async def single_result_stream():
+                        yield result
 
-            async for content in chat_log.async_add_delta_content_stream(
-                user_input.agent_id,
-                _transform_stream(response_stream),
-            ):
-                if isinstance(content, conversation.AssistantContent):
-                    messages.append(_convert_content(content))
+                    response_stream = single_result_stream()
+                else:
+                    response_stream = configured_model.run_stream(messages)
+
+                stream_transformer = StreamTransformer(response_stream)
+                content_converter = ContentConverter(stream_transformer)
+
+                messages.extend(
+                    content_converter.to_yandexgpt_api(
+                        [
+                            content
+                            async for content in chat_log.async_add_delta_content_stream(
+                                user_input.agent_id,
+                                stream_transformer.to_chatlog_api(),
+                            )
+                        ]
+                    )
+                )
+
+                if not chat_log.unresponded_tool_results:
+                    break
         except AioRpcError as err:
             LOGGER.exception("Error talking to Yandex Cloud: %s", err)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="yandex_cloud_error",
                 translation_placeholders={"details": str(err.details())},
+            ) from err
+        except TimeoutError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="yandex_cloud_error",
+                translation_placeholders={"details": "Async operation timed out"},
             ) from err
 
         intent_response = intent.IntentResponse(language=user_input.language)

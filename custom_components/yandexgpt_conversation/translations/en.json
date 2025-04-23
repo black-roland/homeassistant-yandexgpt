@@ -15,7 +15,7 @@
       }
     },
     "abort": {
-      "reconfigure_successful": "Configuration updated"
+      "reconfigure_successful": "Configuration updated successfully"
     }
   },
   "options": {
@@ -23,7 +23,7 @@
       "init": {
         "data": {
           "prompt": "Instructions",
-          "llm_hass_api": "Access to devices",
+          "llm_hass_api": "Control Home Assistant",
           "chat_model": "Model",
           "enable_server_data_logging": "Server data logging",
           "recommended": "Recommended model settings",
@@ -34,16 +34,21 @@
         },
         "data_description": {
           "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
+          "llm_hass_api": "Allows the AI to control devices. Uses extra tokens.",
           "prompt": "Instruct how the LLM should respond. This can be a template.",
           "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers"
         }
       }
+    },
+    "error": {
+      "model_not_supported_for_assist": "This model doesn't support function calling for Home Assistant control",
+      "model_partially_supported_for_assist": "This model has limited smart home control support: submit again to continue anyway"
     }
   },
   "selector": {
     "llm_hass_api": {
       "options": {
-        "none": "No access to devices"
+        "none": "No access to entities"
       }
     }
   },
