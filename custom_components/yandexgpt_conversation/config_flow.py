@@ -26,10 +26,12 @@ from .const import (ASSIST_PARTIALLY_SUPPORTED_MODELS,
                     ASSIST_UNSUPPORTED_MODELS, CONF_ASYNCHRONOUS_MODE,
                     CONF_CHAT_MODEL, CONF_ENABLE_SERVER_DATA_LOGGING,
                     CONF_FOLDER_ID, CONF_MAX_TOKENS, CONF_MODEL_VERSION,
-                    CONF_PROMPT, CONF_RECOMMENDED, CONF_TEMPERATURE,
-                    DEFAULT_CHAT_MODEL, DEFAULT_ENABLE_SERVER_DATA_LOGGING,
+                    CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT, CONF_RECOMMENDED,
+                    CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
+                    DEFAULT_ENABLE_SERVER_DATA_LOGGING,
                     DEFAULT_INSTRUCTIONS_PROMPT_RU, DEFAULT_MODEL_VERSION,
-                    DOMAIN, RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
+                    DEFAULT_NO_HA_DEFAULT_PROMPT, DOMAIN,
+                    RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -255,16 +257,20 @@ def yandexgpt_config_option_schema(
                 default=RECOMMENDED_TEMPERATURE,
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
             vol.Optional(
-                CONF_ASYNCHRONOUS_MODE,
-                description={"suggested_value": options.get(
-                    CONF_ASYNCHRONOUS_MODE)},
-                default=options.get(CONF_ASYNCHRONOUS_MODE, False),
-            ): bool,
-            vol.Optional(
                 CONF_MAX_TOKENS,
                 description={"suggested_value": options.get(CONF_MAX_TOKENS)},
                 default=RECOMMENDED_MAX_TOKENS,
             ): int,
+            vol.Optional(
+                CONF_NO_HA_DEFAULT_PROMPT,
+                description={"suggested_value": options.get(CONF_NO_HA_DEFAULT_PROMPT, DEFAULT_NO_HA_DEFAULT_PROMPT)},
+                default=options.get(CONF_NO_HA_DEFAULT_PROMPT, DEFAULT_NO_HA_DEFAULT_PROMPT),
+            ): bool,
+            vol.Optional(
+                CONF_ASYNCHRONOUS_MODE,
+                description={"suggested_value": options.get(CONF_ASYNCHRONOUS_MODE)},
+                default=options.get(CONF_ASYNCHRONOUS_MODE, False),
+            ): bool,
         }
     )
     return schema

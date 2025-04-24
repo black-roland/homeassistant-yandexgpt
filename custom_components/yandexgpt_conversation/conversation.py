@@ -13,28 +13,20 @@ from homeassistant.components import assist_pipeline, conversation
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, TemplateError
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import intent
+from homeassistant.helpers import intent, template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from yandex_cloud_ml_sdk import AsyncYCloudML
-from yandex_cloud_ml_sdk._models.completions.message import CompletionsMessageType
+from yandex_cloud_ml_sdk._models.completions.message import \
+    CompletionsMessageType
 
-from .const import (
-    CONF_ASYNCHRONOUS_MODE,
-    CONF_CHAT_MODEL,
-    CONF_MAX_TOKENS,
-    CONF_MODEL_VERSION,
-    CONF_PROMPT,
-    CONF_TEMPERATURE,
-    DEFAULT_CHAT_MODEL,
-    DEFAULT_INSTRUCTIONS_PROMPT_RU,
-    DEFAULT_MODEL_VERSION,
-    DOMAIN,
-    LOGGER,
-    RECOMMENDED_MAX_TOKENS,
-    RECOMMENDED_TEMPERATURE,
-)
+from .const import (CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL, CONF_MAX_TOKENS,
+                    CONF_MODEL_VERSION, CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT,
+                    CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
+                    DEFAULT_INSTRUCTIONS_PROMPT_RU, DEFAULT_MODEL_VERSION,
+                    DEFAULT_NO_HA_DEFAULT_PROMPT, DOMAIN, LOGGER,
+                    RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 from .mappers import ContentConverter, StreamTransformer
 
 MAX_TOOL_ITERATIONS = 10
@@ -103,12 +95,14 @@ class YandexGPTConversationEntity(
         """Process a conversation with YandexGPT."""
         settings = {**self.entry.data, **self.entry.options}
 
+        system_prompt = settings.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU)
+
         try:
             await chat_log.async_update_llm_data(
                 DOMAIN,
                 user_input,
                 settings.get(CONF_LLM_HASS_API),
-                settings.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
+                system_prompt,
             )
         except conversation.ConverseError as err:
             return err.as_conversation_result()
@@ -121,10 +115,12 @@ class YandexGPTConversationEntity(
             "max_tokens": settings.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
         }
 
-        content_converter = ContentConverter()
-        messages: list[CompletionsMessageType] = content_converter.to_yandexgpt_api(
-            chat_log.content
-        )
+        no_ha_default_prompt = settings.get(CONF_NO_HA_DEFAULT_PROMPT, DEFAULT_NO_HA_DEFAULT_PROMPT)
+        system_prompt_override = await self._async_expand_prompt_template(
+            system_prompt, user_input) if no_ha_default_prompt else None
+
+        content_converter = ContentConverter(system_prompt_override=system_prompt_override)
+        messages: list[CompletionsMessageType] = content_converter.to_yandexgpt_api(chat_log.content)
 
         if chat_log.llm_api:
             model_conf["tools"] = [
@@ -152,7 +148,8 @@ class YandexGPTConversationEntity(
                     response_stream = configured_model.run_stream(messages)
 
                 stream_transformer = StreamTransformer(response_stream)
-                content_converter = ContentConverter(stream_transformer)
+                content_converter = ContentConverter(
+                    stream_transformer=stream_transformer, system_prompt_override=system_prompt_override)
 
                 messages.extend(
                     content_converter.to_yandexgpt_api(
@@ -190,6 +187,20 @@ class YandexGPTConversationEntity(
             conversation_id=chat_log.conversation_id,
             continue_conversation=chat_log.continue_conversation,
         )
+
+    async def _async_expand_prompt_template(
+        self, prompt_template: str, user_input: conversation.ConversationInput
+    ) -> str:
+        """Render the prompt template."""
+        try:
+            system_prompt = template.Template(prompt_template, self.hass).async_render(parse_result=False)
+
+            if user_input.extra_system_prompt:
+                system_prompt += user_input.extra_system_prompt
+
+            return system_prompt
+        except TemplateError as err:
+            raise HomeAssistantError("Error rendering prompt template") from err
 
     async def _async_entry_update_listener(
         self, hass: HomeAssistant, entry: ConfigEntry

@@ -29,14 +29,16 @@
           "recommended": "Recommended model settings",
           "model_version": "Version",
           "temperature": "Temperature",
-          "asynchronous_mode": "Asynchronous mode",
-          "max_tokens": "Maximum tokens to return in response"
+          "max_tokens": "Maximum tokens to return in response",
+          "no_ha_default_prompt": "Ignore default Home Assistant prompt",
+          "asynchronous_mode": "Asynchronous mode"
         },
         "data_description": {
           "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
           "llm_hass_api": "Allows the AI to control devices. Uses extra tokens.",
           "prompt": "Instruct how the LLM should respond. This can be a template.",
-          "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers"
+          "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers",
+          "no_ha_default_prompt": "Disables automatic appending of time and devices list"
         }
       }
     },

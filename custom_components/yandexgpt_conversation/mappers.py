@@ -100,8 +100,11 @@ class StreamTransformer:
 
 class ContentConverter:
 
-    def __init__(self, stream_transformer: Optional[StreamTransformer] = None) -> None:
+    def __init__(
+        self, stream_transformer: Optional[StreamTransformer] = None, system_prompt_override: Optional[str] = None
+    ) -> None:
         self._stream_transformer = stream_transformer
+        self._system_prompt_override = system_prompt_override
 
     def to_yandexgpt_api(
         self, chat_logs: Iterable[conversation.Content]
@@ -128,10 +131,7 @@ class ContentConverter:
                     }],
                 })
 
-            elif (
-                isinstance(content, conversation.AssistantContent)
-                and content.tool_calls
-            ):
+            elif isinstance(content, conversation.AssistantContent) and content.tool_calls:
                 if not self._stream_transformer:
                     continue
 
@@ -140,9 +140,11 @@ class ContentConverter:
                 # is saved temporary during YandexGPT -> ChatLog API transform.
                 messages.append(self._stream_transformer.tool_calls_message)
 
+            elif isinstance(content, conversation.SystemContent) and self._system_prompt_override:
+                messages.append({"role": "system", "text": self._system_prompt_override})
+
             elif content.content:
-                messages.append(
-                    {"role": content.role, "text": content.content})
+                messages.append({"role": content.role, "text": content.content})
 
             else:
                 raise TypeError(f"Unexpected content type: {type(content)}")
