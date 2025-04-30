@@ -6,14 +6,16 @@ See [description in English](#yandexgpt-integration-for-home-assistant) below �
 
 [![Добавить репозиторий в HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=black-roland&repository=homeassistant-yandexgpt&category=integration) [![Настроить интеграцию с YandexGPT](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=yandexgpt_conversation)
 
-Ассистент на основе YandexGPT для Home Assistant:
+Ассистент с искусственным интеллектом для вашего умного дома. Интеграция объединяет возможности [YandexGPT](https://ya.ru/ai/gpt) с Home Assistant, позволяя создать полноценную систему управления умным домом с естественным языковым интерфейсом.
 
-- Интеграция позволяет «общаться» с ассистентом из интерфейса Home Assistant.
-- У ассистента можно узнавать показания датчиков, состояние света и других устройств. То есть ассистент на базе YandexGPT знает все про умный дом и устройства в нем.
-- С помощью приложения Home Assistant, установленного на смартфоне или умных часах, можно общаться с ассистентом голосом.
+## Возможности
+
+- Общение с ассистентом через интерфейс Home Assistant.
+- Полноценное управление умным домом: ассистент может не только сообщать состояние устройств, но и управлять ими (включать свет, регулировать температуру и т.д.), а также запускать скрипты и автоматизации.
+- Общение с ассистентом через приложение Home Assistant на смартфоне или умных часах.
 - Интеграция может служить «мозгом» для создания DIY-умной колонки на базе ESPHome, если помимо YandexGPT добавить в Home Assistant синтез и распознавание речи.
 - YandexGPT можно использовать в автоматизациях, например, для создания чат-бота в Telegram.
-- Кроме того, интеграция позволяет генерировать изображения с помощью YandexART.
+- Кроме того, интеграция позволяет генерировать изображения с помощью [YandexART](https://ya.ru/ai/art).
 
 YandexGPT — это облачный сервис, плата за который взимается в соответствии с тарифами Yandex Cloud. При первой регистрации [можно получить стартовый грант](https://yandex.cloud/ru/docs/getting-started/usage-grant).
 
@@ -34,7 +36,7 @@ TLDR: Добавьте интеграцию, используя голубые �
 
 ## Спасибо
 
-Интеграция оказалась полезной? Хотите сказать спасибо? Кофе автору — ваша благодарность. <kbd>[☕ На кофе](https://mansmarthome.info/donate#donationalerts)</kbd> 
+Интеграция оказалась полезной? Хотите сказать спасибо? Кофе автору — ваша благодарность. <kbd>[☕ На кофе](https://mansmarthome.info/donate#donationalerts)</kbd>
 
 Большое спасибо всем, кто меня поддерживает:
 
@@ -55,16 +57,18 @@ TLDR: Добавьте интеграцию, используя голубые �
 
 [![Add custom repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=black-roland&repository=homeassistant-yandexgpt&category=integration) [![Set up YandexGPT integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=yandexgpt_conversation)
 
-The assistant based on YandexGPT for Home Assistant:
+AI-powered assistant for your smart home. This integration bridges [YandexGPT](https://yandex.cloud/en/services/yandexgpt) capabilities with Home Assistant, enabling a complete smart home control system with natural language interface.
 
-- The integration allows you to chat with the assistant from the Home Assistant UI.
-- You can ask the assistant about sensor readings, status of lights and other devices. So the assistant knows everything about your smart home and the devices in it.
-- You can chat with the assistant using Home Assistant app on a watch or smartphone.
-- Integration can be the «brain» of a DIY smart speaker based on ESPHome if in addition to YandexGPT you would add speech synthesis and recognition to Home Assistant.
-- YandexGPT can be used in automations. For example, this way you can create a chatbot for Telegram or any other supported messenger.
-- In addition to YandexGPT, the integration provides image generation using YandexART.
+## Features
 
-YandexGPT is a cloud service. Fees are charged according to Yandex Cloud tariffs.
+- Chat with the assistant directly from Home Assistant's interface.
+- Full smart home control: the assistant can not only report device states but also control them (turn lights on/off, adjust temperature, etc.) and execute scripts/automations.
+- Chat with the assistant using Home Assistant app on a smartphone or smartwatch.
+- Can serve as the "brain" for a DIY smart speaker using ESPHome when combined with speech synthesis/recognition.
+- Useful for creating Telegram chatbots and other automations.
+- Includes image generation capabilities via YandexART.
+
+YandexGPT is a cloud service with pricing according to Yandex Cloud tariffs.
 
 ## Set up
 
