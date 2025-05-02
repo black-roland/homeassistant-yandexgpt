@@ -40,12 +40,9 @@ TLDR: Добавьте интеграцию, используя голубые �
 
 Большое спасибо всем, кто меня поддерживает:
 
-<p>
-  <img src="https://github.com/user-attachments/assets/ed2b200c-e692-421c-9b61-e92975a796fe" height="400px" alt="Александр" />
-  <img src="https://github.com/user-attachments/assets/5fe01201-a2b7-41e7-b8a5-4ee42e4fdc4d" height="200px" alt="Андрей" />
-<p>
+![Спасибо][donors-list]
 
-## Информация
+## Уведомление
 
 Это независимая интеграция, разработанная сообществом. Я не связан с Яндексом или Яндекс Облаком. YandexGPT и YandexART — это сервисы, предоставляемые Яндекс Облаком.
 
@@ -76,6 +73,9 @@ Use blue buttons above to install and configure the integration. Please check ou
 
 ## Notice
 
+
 This is an independent community-developed integration. I'm not affiliated with Yandex or Yandex Cloud in any way. YandexGPT and YandexART are services provided by Yandex Cloud.
 
 This integration is not an official Yandex product and is not supported by Yandex.
+
+[donors-list]: https://github.com/user-attachments/assets/218c7080-14a6-4f35-957d-41ceb0acbd4d
