@@ -27,8 +27,7 @@ RECOMMENDED_MAX_TOKENS = 1024
 RECOMMENDED_TEMPERATURE = 0.6
 
 DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистент для Home Assistant.
-Отвечай на вопросы правдиво.
-Отвечай простым текстом, кратко и по существу.
+Отвечай на вопросы правдиво. Отвечай кратко, чётко и на русском языке.
 """
 
 ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
