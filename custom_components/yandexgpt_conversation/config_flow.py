@@ -43,6 +43,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 RECOMMENDED_OPTIONS = {
     CONF_RECOMMENDED: True,
     CONF_PROMPT: DEFAULT_INSTRUCTIONS_PROMPT_RU,
+    CONF_CHAT_MODEL: DEFAULT_CHAT_MODEL,
+    CONF_ENABLE_SERVER_DATA_LOGGING: DEFAULT_ENABLE_SERVER_DATA_LOGGING,
 }
 
 
@@ -107,8 +109,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.errors: dict[str, str] = {}
-        self.last_rendered_recommended = config_entry.options.get(
-            CONF_RECOMMENDED, False)
+        self.last_rendered_recommended = config_entry.options.get(CONF_RECOMMENDED, False)
         self.last_selected_model: str | None = None
 
     async def async_step_init(
@@ -118,23 +119,26 @@ class YandexGPTOptionsFlow(OptionsFlow):
         options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
 
         if user_input is not None:
-            self._validate_selected_model(user_input)
-
             if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
                 if user_input[CONF_LLM_HASS_API] == "none":
                     user_input.pop(CONF_LLM_HASS_API)
+
+                self._validate_selected_model(user_input)
+
                 if not self.errors:
                     return self.async_create_entry(title="", data=user_input)
 
-            # Re-render the options again,
-            # now with the recommended options shown/hidden
-            self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
-            options = {
-                CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
-                CONF_PROMPT: user_input[CONF_PROMPT],
-                CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
-                CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
-            }
+                options = {**options, **user_input}
+            else:
+                # Re-render the options form, now with the recommended options shown/hidden
+                self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
+                options = {
+                    CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
+                    CONF_PROMPT: user_input[CONF_PROMPT],
+                    CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
+                    CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
+                    CONF_ENABLE_SERVER_DATA_LOGGING: user_input[CONF_ENABLE_SERVER_DATA_LOGGING],
+                }
 
         suggested_values = options.copy()
         if not suggested_values.get(CONF_PROMPT):
@@ -157,8 +161,9 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
     def _validate_selected_model(self, user_input: dict[str, Any]) -> None:
         """Validate the selected model."""
-        is_assist_enabled = user_input.get(CONF_LLM_HASS_API) != "none"
+        is_assist_enabled = user_input.get(CONF_LLM_HASS_API, "none") != "none"
         if not is_assist_enabled:
+            self.errors.pop(CONF_CHAT_MODEL, None)
             return
 
         selected_model = user_input.get(CONF_CHAT_MODEL)
@@ -243,13 +248,10 @@ def yandexgpt_config_option_schema(
         {
             vol.Optional(
                 CONF_MODEL_VERSION,
-                description={"suggested_value": options.get(
-                    CONF_MODEL_VERSION)},
+                description={"suggested_value": options.get(CONF_MODEL_VERSION)},
                 default=DEFAULT_MODEL_VERSION,
             ): SelectSelector(
-                SelectSelectorConfig(
-                    mode=SelectSelectorMode.DROPDOWN, options=model_versions
-                )
+                SelectSelectorConfig(mode=SelectSelectorMode.DROPDOWN, options=model_versions)
             ),
             vol.Optional(
                 CONF_TEMPERATURE,
