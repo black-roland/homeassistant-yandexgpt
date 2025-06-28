@@ -1,7 +1,7 @@
 {
     "name": "YandexGPT",
     "render_readme": true,
-    "homeassistant": "2025.5.0b0",
+    "homeassistant": "2025.2.0b0",
     "zip_release": true,
     "filename": "yandexgpt.zip"
 }
