@@ -15,7 +15,8 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.typing import ConfigType
-from yandex_cloud_ml_sdk import AsyncYCloudML
+
+from .sdk_workaround import is_latest_sdk_installed, upgrade_sdk
 
 from .const import (ATTR_FILENAME, ATTR_PROMPT, ATTR_SEED,
                     CONF_ENABLE_SERVER_DATA_LOGGING, CONF_FOLDER_ID,
@@ -73,6 +74,11 @@ async def async_setup(hass: HomeAssistant, entry: ConfigType) -> bool:
             LOGGER.error("Error during image generation: %s", str(err), exc_info=True)
             raise HomeAssistantError(f"Image generation failed: {str(err)}") from err
 
+    if not is_latest_sdk_installed():
+        upgrade_success = upgrade_sdk()
+        if not upgrade_success:
+            return False
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_GENERATE_IMAGE,
@@ -99,6 +105,8 @@ async def async_setup(hass: HomeAssistant, entry: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up YandexGPT from a config entry."""
+    from yandex_cloud_ml_sdk import AsyncYCloudML
+
     settings = {**entry.data, **entry.options}
 
     entry.runtime_data = AsyncYCloudML(
