@@ -74,8 +74,8 @@ async def async_setup(hass: HomeAssistant, entry: ConfigType) -> bool:
             LOGGER.error("Error during image generation: %s", str(err), exc_info=True)
             raise HomeAssistantError(f"Image generation failed: {str(err)}") from err
 
-    if not is_latest_sdk_installed():
-        upgrade_success = upgrade_sdk()
+    if not await hass.async_add_executor_job(is_latest_sdk_installed):
+        upgrade_success = await hass.async_add_executor_job(upgrade_sdk)
         if not upgrade_success:
             return False
 
