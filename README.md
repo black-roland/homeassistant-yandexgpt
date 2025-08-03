@@ -34,6 +34,12 @@ TLDR: Добавьте интеграцию, используя голубые �
   <img src="https://github.com/user-attachments/assets/34f05829-7a10-4087-8596-5087b8310533" height="340px" alt="Morning digests" />
 </p>
 
+## Альтернативы
+
+Если вам нужен доступ к открытым моделям (Llama, Qwen, T-Pro и другим), рассмотрите интеграцию [Cloud.ru Foundation Models](https://github.com/black-roland/homeassistant-cloud-ru-ai). В отличие от YandexGPT, она предоставляет выбор из нескольких открытых LLM и может быть более экономичным вариантом для некоторых сценариев использования, хотя и не поддерживает генерацию изображений.
+
+Обе интеграции позволяют создавать умных ассистентов для Home Assistant, и [примеры использования из моего блога](https://mansmarthome.info/tags/ai/) легко адаптируются для любой из них.
+
 ## Спасибо
 
 Интеграция оказалась полезной? Хотите сказать спасибо? Кофе автору — ваша благодарность. <kbd>[☕ На кофе](https://mansmarthome.info/donate/?utm_source=github&utm_medium=referral&utm_campaign=gpt#%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%B0-%D0%B1%D1%8B%D1%81%D1%82%D1%80%D1%8B%D1%85-%D0%BF%D0%BB%D0%B0%D1%82%D0%B5%D0%B6%D0%B5%D0%B9)</kbd>
@@ -72,7 +78,6 @@ YandexGPT is a cloud service with pricing according to Yandex Cloud tariffs.
 Use blue buttons above to install and configure the integration. Please check out the official documentation on how to retrieve [folder ID](https://yandex.cloud/en/docs/resource-manager/operations/folder/get-id) and [API key](https://yandex.cloud/en/docs/iam/operations/api-key/create). For a service account it's required to set the following roles: `ai.languageModels.user` and `ai.imageGeneration.user`.
 
 ## Notice
-
 
 This is an independent community-developed integration. I'm not affiliated with Yandex or Yandex Cloud in any way. YandexGPT and YandexART are services provided by Yandex Cloud.
 
