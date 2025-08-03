@@ -13,7 +13,7 @@ from .const import LOGGER
 # The history of "we don't give a 💩":
 # https://github.com/yandex-cloud/python-sdk/issues?q=is%3Aissue%20dependencies%20OR%20requirements%20OR%20constraints
 REQUIRED_PACKAGES = [
-    "yandex-cloud-ml-sdk==0.13.1",
+    "yandex-cloud-ml-sdk==0.12.0",
     "yandexcloud==0.353.0"
 ]
 
