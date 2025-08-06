@@ -83,4 +83,4 @@ This is an independent community-developed integration. I'm not affiliated with 
 
 This integration is not an official Yandex product and is not supported by Yandex.
 
-[donors-list]: https://github.com/user-attachments/assets/218c7080-14a6-4f35-957d-41ceb0acbd4d
+[donors-list]: https://github.com/user-attachments/assets/880000a7-0dc9-4bd3-99f5-bcf81eed1f8d
