@@ -20,26 +20,14 @@ from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from yandex_cloud_ml_sdk import AsyncYCloudML
 from yandex_cloud_ml_sdk._models.completions.message import TextMessage
-from yandex_cloud_ml_sdk._models.completions.result import (
-    AlternativeStatus,
-    GPTModelResult,
-)
+from yandex_cloud_ml_sdk._models.completions.result import (AlternativeStatus,
+                                                            GPTModelResult)
 
-from .const import (
-    CONF_ASYNCHRONOUS_MODE,
-    CONF_CHAT_MODEL,
-    CONF_MAX_TOKENS,
-    CONF_MODEL_VERSION,
-    CONF_PROMPT,
-    CONF_TEMPERATURE,
-    DEFAULT_CHAT_MODEL,
-    DEFAULT_INSTRUCTIONS_PROMPT_RU,
-    DEFAULT_MODEL_VERSION,
-    DOMAIN,
-    LOGGER,
-    RECOMMENDED_MAX_TOKENS,
-    RECOMMENDED_TEMPERATURE,
-)
+from .const import (CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL, CONF_MAX_TOKENS,
+                    CONF_MODEL_VERSION, CONF_PROMPT, CONF_TEMPERATURE,
+                    DEFAULT_CHAT_MODEL, DEFAULT_INSTRUCTIONS_PROMPT_RU,
+                    DEFAULT_MODEL_VERSION, DOMAIN, LOGGER,
+                    RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 
 
 async def async_setup_entry(
@@ -75,7 +63,7 @@ async def _transform_stream(
         if status in (AlternativeStatus.FINAL, AlternativeStatus.TRUNCATED_FINAL):
             if status == AlternativeStatus.TRUNCATED_FINAL:
                 LOGGER.warning("Response was truncated by YandexGPT")
-            delta = text[len(streamed_text) :]
+            delta = text[len(streamed_text):]
             yield {"content": delta}
             # In case a new message appears after this on is finalized
             prev_text = ""
@@ -105,7 +93,7 @@ async def _transform_stream(
         # characters. In streaming mode, LLM-generated text could be split
         # mid-character, breaking 4-byte sequences:
         # https://github.com/black-roland/homeassistant-yandexgpt/issues/17
-        delta = text[len(streamed_text) : len(prev_text)]
+        delta = text[len(streamed_text): len(prev_text)]
         yield {"content": delta}
         streamed_text = prev_text
         prev_text = text
@@ -152,7 +140,7 @@ class YandexGPTConversationEntity(
             await chat_log.async_update_llm_data(
                 DOMAIN,
                 user_input,
-                settings.get(CONF_LLM_HASS_API),
+                None,
                 settings.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
             )
         except conversation.ConverseError as err:

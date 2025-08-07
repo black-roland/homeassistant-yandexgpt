@@ -170,19 +170,17 @@ def yandexgpt_config_option_schema(
     options: dict[str, Any] | MappingProxyType[str, Any],
 ) -> dict:
     """Return a schema for YandexGPT completion options."""
+    # Function calling isn't supported by this older version of Yandex.Cloud SDK,
+    # so the Assist feature must be disabled.
+    # Previously, it made sense to allow Assist to be enabled because, when enabled,
+    # the Assist API would append device states to the prompt. However, in newer versions
+    # of Home Assistant, the GetLiveContext tool is used to fetch device states instead.
     hass_apis: list[SelectOptionDict] = [
         SelectOptionDict(
             label="No access to devices",
             value="none",
         )
     ]
-    hass_apis.extend(
-        SelectOptionDict(
-            label=api.name,
-            value=api.id,
-        )
-        for api in llm.async_get_apis(hass)
-    )
 
     model_names = [
         SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
