@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - v1.3.x
   pull_request:
 
 jobs:
