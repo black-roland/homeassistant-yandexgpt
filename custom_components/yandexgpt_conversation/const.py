@@ -30,6 +30,16 @@ DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистен
 Отвечай на вопросы правдиво. Отвечай кратко, чётко и на русском языке.
 """
 
+CHAT_MODELS = (
+    ("yandexgpt-lite", "YandexGPT Lite"),
+    ("yandexgpt", "YandexGPT Pro"),
+    ("llama-lite", "Llama 8B"),
+    ("llama", "Llama 70B"),
+    ("qwen3-235b-a22b-fp8", "Qwen3 235B"),
+    ("gpt-oss-120b", "gpt-oss-120b"),
+    ("gpt-oss-20b", "gpt-oss-20b"),
+)
+
 ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
 ASSIST_PARTIALLY_SUPPORTED_MODELS = ["llama", "yandexgpt-lite"]
 

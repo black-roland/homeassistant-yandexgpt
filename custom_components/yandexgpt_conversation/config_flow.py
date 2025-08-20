@@ -23,9 +23,10 @@ from homeassistant.helpers.selector import (NumberSelector,
                                             TemplateSelector)
 
 from .const import (ASSIST_PARTIALLY_SUPPORTED_MODELS,
-                    ASSIST_UNSUPPORTED_MODELS, CONF_ASYNCHRONOUS_MODE,
-                    CONF_CHAT_MODEL, CONF_ENABLE_SERVER_DATA_LOGGING,
-                    CONF_FOLDER_ID, CONF_MAX_TOKENS, CONF_MODEL_VERSION,
+                    ASSIST_UNSUPPORTED_MODELS, CHAT_MODELS,
+                    CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL,
+                    CONF_ENABLE_SERVER_DATA_LOGGING, CONF_FOLDER_ID,
+                    CONF_MAX_TOKENS, CONF_MODEL_VERSION,
                     CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT, CONF_RECOMMENDED,
                     CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
                     DEFAULT_ENABLE_SERVER_DATA_LOGGING,
@@ -199,13 +200,7 @@ def yandexgpt_config_option_schema(
         for api in llm.async_get_apis(hass)
     )
 
-    model_names = [
-        SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
-        SelectOptionDict(label="YandexGPT Pro", value="yandexgpt"),
-        SelectOptionDict(label="Llama 8B", value="llama-lite"),
-        SelectOptionDict(label="Llama 70B", value="llama"),
-        SelectOptionDict(label="Qwen3 235B", value="qwen3-235b-a22b-fp8"),
-    ]
+    chat_models = [SelectOptionDict(value=value, label=label) for value, label in CHAT_MODELS]
 
     schema = {
         vol.Optional(CONF_PROMPT): TemplateSelector(),
@@ -223,7 +218,7 @@ def yandexgpt_config_option_schema(
             default=DEFAULT_CHAT_MODEL,
         ): SelectSelector(
             SelectSelectorConfig(
-                mode=SelectSelectorMode.DROPDOWN, options=model_names)
+                mode=SelectSelectorMode.DROPDOWN, options=chat_models)
         ),
         vol.Required(
             CONF_ENABLE_SERVER_DATA_LOGGING,
