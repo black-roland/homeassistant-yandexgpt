@@ -26,11 +26,12 @@ from .const import (ASSIST_PARTIALLY_SUPPORTED_MODELS,
                     ASSIST_UNSUPPORTED_MODELS, CHAT_MODELS,
                     CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL,
                     CONF_ENABLE_SERVER_DATA_LOGGING, CONF_FOLDER_ID,
-                    CONF_MAX_TOKENS, CONF_MODEL_VERSION,
-                    CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT, CONF_RECOMMENDED,
-                    CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
+                    CONF_MAX_TOKENS, CONF_MAX_TOOL_ITERATIONS,
+                    CONF_MODEL_VERSION, CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT,
+                    CONF_RECOMMENDED, CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
                     DEFAULT_ENABLE_SERVER_DATA_LOGGING,
-                    DEFAULT_INSTRUCTIONS_PROMPT_RU, DEFAULT_MODEL_VERSION,
+                    DEFAULT_INSTRUCTIONS_PROMPT_RU,
+                    DEFAULT_MAX_TOOL_ITERATIONS, DEFAULT_MODEL_VERSION,
                     DEFAULT_NO_HA_DEFAULT_PROMPT, DOMAIN,
                     RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 
@@ -46,6 +47,7 @@ RECOMMENDED_OPTIONS = {
     CONF_PROMPT: DEFAULT_INSTRUCTIONS_PROMPT_RU,
     CONF_CHAT_MODEL: DEFAULT_CHAT_MODEL,
     CONF_ENABLE_SERVER_DATA_LOGGING: DEFAULT_ENABLE_SERVER_DATA_LOGGING,
+    CONF_MAX_TOOL_ITERATIONS: DEFAULT_MAX_TOOL_ITERATIONS,
 }
 
 
@@ -264,6 +266,11 @@ def yandexgpt_config_option_schema(
                 description={"suggested_value": options.get(CONF_NO_HA_DEFAULT_PROMPT, DEFAULT_NO_HA_DEFAULT_PROMPT)},
                 default=options.get(CONF_NO_HA_DEFAULT_PROMPT, DEFAULT_NO_HA_DEFAULT_PROMPT),
             ): bool,
+            vol.Optional(
+                CONF_MAX_TOOL_ITERATIONS,
+                description={"suggested_value": options.get(CONF_MAX_TOOL_ITERATIONS, DEFAULT_MAX_TOOL_ITERATIONS)},
+                default=options.get(CONF_MAX_TOOL_ITERATIONS, DEFAULT_MAX_TOOL_ITERATIONS),
+            ): int,
             vol.Optional(
                 CONF_ASYNCHRONOUS_MODE,
                 description={"suggested_value": options.get(CONF_ASYNCHRONOUS_MODE)},

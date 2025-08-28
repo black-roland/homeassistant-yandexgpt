@@ -22,14 +22,13 @@ from yandex_cloud_ml_sdk._models.completions.message import \
     CompletionsMessageType
 
 from .const import (CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL, CONF_MAX_TOKENS,
-                    CONF_MODEL_VERSION, CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT,
-                    CONF_TEMPERATURE, DEFAULT_CHAT_MODEL,
-                    DEFAULT_INSTRUCTIONS_PROMPT_RU, DEFAULT_MODEL_VERSION,
+                    CONF_MAX_TOOL_ITERATIONS, CONF_MODEL_VERSION,
+                    CONF_NO_HA_DEFAULT_PROMPT, CONF_PROMPT, CONF_TEMPERATURE,
+                    DEFAULT_CHAT_MODEL, DEFAULT_INSTRUCTIONS_PROMPT_RU,
+                    DEFAULT_MAX_TOOL_ITERATIONS, DEFAULT_MODEL_VERSION,
                     DEFAULT_NO_HA_DEFAULT_PROMPT, DOMAIN, LOGGER,
                     RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 from .mappers import ContentConverter, StreamTransformer
-
-MAX_TOOL_ITERATIONS = 10
 
 
 async def async_setup_entry(
@@ -117,7 +116,8 @@ class YandexGPTConversationEntity(
             model = client.models.completions(model_name, model_version=model_ver)
             configured_model = model.configure(**model_conf)
 
-            for _iteration in range(MAX_TOOL_ITERATIONS):
+            max_tool_iterations = settings.get(CONF_MAX_TOOL_ITERATIONS, DEFAULT_MAX_TOOL_ITERATIONS)
+            for _iteration in range(max_tool_iterations):
                 LOGGER.debug("Prompt: %s", messages)
 
                 if settings.get(CONF_ASYNCHRONOUS_MODE, False):

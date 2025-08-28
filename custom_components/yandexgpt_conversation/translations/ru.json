@@ -30,6 +30,7 @@
           "model_version": "Версия",
           "temperature": "Температура",
           "max_tokens": "Ограничить количество токенов в ответе",
+          "max_tool_iterations": "Максимум итераций для обработки вызовов функций",
           "no_ha_default_prompt": "Игнорировать стандартный промпт Home Assistant",
           "asynchronous_mode": "Асинхронный режим"
         },

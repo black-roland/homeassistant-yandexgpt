@@ -30,6 +30,7 @@
           "model_version": "Version",
           "temperature": "Temperature",
           "max_tokens": "Maximum tokens to return in response",
+          "max_tool_iterations": "Maximum tool iterations",
           "no_ha_default_prompt": "Ignore default Home Assistant prompt",
           "asynchronous_mode": "Asynchronous mode"
         },
