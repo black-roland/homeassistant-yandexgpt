@@ -10,11 +10,12 @@ from .const import LOGGER
 # Details:
 # https://github.com/black-roland/homeassistant-yandexgpt/issues/32
 #
-# The history of "we don't give a 💩":
+# The history of "we don't give a 💩 and don't test our SDK":
 # https://github.com/yandex-cloud/python-sdk/issues?q=is%3Aissue%20dependencies%20OR%20requirements%20OR%20constraints
 REQUIRED_PACKAGES = [
     "yandex-cloud-ml-sdk==0.12.0",
-    "yandexcloud==0.353.0"
+    "yandexcloud==0.353.0",
+    "protobuf>=6.31.1",
 ]
 
 
