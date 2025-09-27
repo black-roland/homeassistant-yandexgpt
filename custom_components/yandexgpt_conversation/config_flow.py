@@ -185,9 +185,6 @@ def yandexgpt_config_option_schema(
     model_names = [
         SelectOptionDict(label="YandexGPT Lite", value="yandexgpt-lite"),
         SelectOptionDict(label="YandexGPT Pro", value="yandexgpt"),
-        SelectOptionDict(label="Llama 8B", value="llama-lite"),
-        SelectOptionDict(label="Llama 70B", value="llama"),
-        SelectOptionDict(label="Qwen3 235B", value="qwen3-235b-a22b-fp8"),
     ]
 
     schema = {
