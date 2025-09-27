@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
   "loggers": ["yandexgpt_conversation"],
   "requirements": [],
-  "version": "1.5.3"
+  "version": "1.5.4"
 }
