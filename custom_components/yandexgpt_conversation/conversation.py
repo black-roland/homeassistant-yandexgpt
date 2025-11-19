@@ -137,11 +137,11 @@ class YandexGPTConversationEntity(
         settings = {**self.entry.data, **self.entry.options}
 
         try:
-            await chat_log.async_update_llm_data(
-                DOMAIN,
-                user_input,
+            await chat_log.async_provide_llm_data(
+                user_input.as_llm_context(DOMAIN),
                 None,
                 settings.get(CONF_PROMPT, DEFAULT_INSTRUCTIONS_PROMPT_RU),
+                user_input.extra_system_prompt,
             )
         except conversation.ConverseError as err:
             return err.as_conversation_result()
