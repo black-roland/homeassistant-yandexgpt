@@ -35,6 +35,7 @@ DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистен
 CHAT_MODELS = (
     ("yandexgpt-lite", "YandexGPT Lite"),
     ("yandexgpt", "YandexGPT Pro"),
+    ("alice", "Alice LLM"),
 )
 
 ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
