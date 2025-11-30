@@ -21,7 +21,7 @@ CONF_ASYNCHRONOUS_MODE = "asynchronous_mode"
 CONF_MAX_TOOL_ITERATIONS = "max_tool_iterations"
 CONF_NO_HA_DEFAULT_PROMPT = "no_ha_default_prompt"
 DEFAULT_CHAT_MODEL = "yandexgpt-lite"
-DEFAULT_MODEL_VERSION = "rc"
+DEFAULT_MODEL_VERSION = "latest"
 DEFAULT_NO_HA_DEFAULT_PROMPT = False
 DEFAULT_ENABLE_SERVER_DATA_LOGGING = True
 DEFAULT_MAX_TOOL_ITERATIONS = 10
@@ -35,6 +35,7 @@ DEFAULT_INSTRUCTIONS_PROMPT_RU = """Ты — голосовой ассистен
 CHAT_MODELS = (
     ("yandexgpt-lite", "YandexGPT Lite"),
     ("yandexgpt", "YandexGPT Pro"),
+    ("aliceai-llm", "Alice AI LLM"),
 )
 
 ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
