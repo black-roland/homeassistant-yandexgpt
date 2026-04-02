@@ -36,7 +36,7 @@
         },
         "data_description": {
           "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
-          "llm_hass_api": "Allows the AI to control devices. Uses extra tokens.",
+          "llm_hass_api": "Allows the AI to control devices via function calling. Uses extra tokens.",
           "prompt": "Instruct how the LLM should respond. This can be a template.",
           "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers",
           "no_ha_default_prompt": "Disables automatic appending of time and devices list"
@@ -44,15 +44,8 @@
       }
     },
     "error": {
-      "model_not_supported_for_assist": "This model doesn't support function calling for Home Assistant control",
-      "model_partially_supported_for_assist": "This model has limited smart home control support: submit again to continue anyway"
-    }
-  },
-  "selector": {
-    "llm_hass_api": {
-      "options": {
-        "none": "No access to entities"
-      }
+      "model_not_supported_for_tools": "This model does not support function calling / tool use",
+      "model_partially_supported_for_tools": "This model has limited support for function calling / tool use: submit again to continue anyway"
     }
   },
   "services": {
