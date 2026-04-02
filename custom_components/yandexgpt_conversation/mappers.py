@@ -12,14 +12,15 @@ from homeassistant.components import conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 from voluptuous_openapi import convert
-from yandex_cloud_ml_sdk._models.completions.message import \
+from yandex_ai_studio_sdk import AsyncAIStudio
+from yandex_ai_studio_sdk._models.completions.message import \
     CompletionsMessageType
-from yandex_cloud_ml_sdk._models.completions.message import \
+from yandex_ai_studio_sdk._models.completions.message import \
     FunctionResultMessageDict as ToolResultsMessageType
-from yandex_cloud_ml_sdk._models.completions.result import (AlternativeStatus,
-                                                            GPTModelResult)
-from yandex_cloud_ml_sdk._tools.tool import FunctionTool
-from yandex_cloud_ml_sdk._tools.tool_call import AsyncToolCall
+from yandex_ai_studio_sdk._models.completions.result import (AlternativeStatus,
+                                                             GPTModelResult)
+from yandex_ai_studio_sdk._tools.tool import FunctionTool
+from yandex_ai_studio_sdk._tools.tool_call import AsyncToolCall
 
 from .const import DOMAIN, LOGGER
 
@@ -153,14 +154,12 @@ class ContentConverter:
 
     @staticmethod
     def format_tool(
-        tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
+        sdk: AsyncAIStudio, tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
     ) -> FunctionTool:
         """Convert HA tool to YandexGPT format."""
-        # client.tools.function seems to have broken typings,
-        # use FunctionTool directly
-        return FunctionTool(
+        return sdk.tools.function(
             name=tool.name,
-            description=tool.description,
-            parameters=convert(
-                tool.parameters, custom_serializer=custom_serializer),
+            description=tool.description or "",
+            parameters=convert(tool.parameters, custom_serializer=custom_serializer),
+            strict=False,
         )

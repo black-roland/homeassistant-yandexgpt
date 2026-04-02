@@ -17,8 +17,8 @@ from homeassistant.exceptions import HomeAssistantError, TemplateError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import intent, template
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from yandex_cloud_ml_sdk import AsyncYCloudML
-from yandex_cloud_ml_sdk._models.completions.message import \
+from yandex_ai_studio_sdk import AsyncAIStudio
+from yandex_ai_studio_sdk._models.completions.message import \
     CompletionsMessageType
 
 from .const import (CONF_ASYNCHRONOUS_MODE, CONF_CHAT_MODEL, CONF_MAX_TOKENS,
@@ -91,7 +91,7 @@ class YandexGPTConversationEntity(
         except conversation.ConverseError as err:
             return err.as_conversation_result()
 
-        client: AsyncYCloudML = self.entry.runtime_data
+        client: AsyncAIStudio = self.entry.runtime_data
         model_name = settings.get(CONF_CHAT_MODEL, DEFAULT_CHAT_MODEL).split("/")[0]
         model_ver = settings.get(CONF_MODEL_VERSION, DEFAULT_MODEL_VERSION)
         model_conf = {
@@ -108,7 +108,7 @@ class YandexGPTConversationEntity(
 
         if chat_log.llm_api:
             model_conf["tools"] = [
-                ContentConverter.format_tool(tool, chat_log.llm_api.custom_serializer)
+                ContentConverter.format_tool(client, tool, chat_log.llm_api.custom_serializer)
                 for tool in chat_log.llm_api.tools
             ]
 

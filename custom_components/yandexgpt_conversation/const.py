@@ -38,8 +38,8 @@ CHAT_MODELS = (
     ("aliceai-llm", "Alice AI LLM"),
 )
 
-ASSIST_UNSUPPORTED_MODELS = ["llama-lite"]
-ASSIST_PARTIALLY_SUPPORTED_MODELS = ["llama", "yandexgpt-lite"]
+ASSIST_UNSUPPORTED_MODELS = []
+ASSIST_PARTIALLY_SUPPORTED_MODELS = ["yandexgpt-lite"]
 
 ATTR_FILENAME = "file_name"
 ATTR_SEED = "seed"

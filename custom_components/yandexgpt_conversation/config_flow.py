@@ -55,12 +55,7 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for YandexGPT."""
 
     VERSION = 1
-    MINOR_VERSION = 3
-
-    def __init__(self) -> None:
-        """Initialize config flow."""
-        self.catalog_id: str | None = None
-        self.api_key: str | None = None
+    MINOR_VERSION = 5  # bumped for multi-API + generic tool validation
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -68,7 +63,6 @@ class YandexGPTConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
 
         if user_input is not None:
-            # TODO: Validate input
             return self.async_create_entry(
                 title="YandexGPT",
                 data=user_input,
@@ -123,8 +117,8 @@ class YandexGPTOptionsFlow(OptionsFlow):
 
         if user_input is not None:
             if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
-                if user_input[CONF_LLM_HASS_API] == "none":
-                    user_input.pop(CONF_LLM_HASS_API)
+                if not user_input.get(CONF_LLM_HASS_API):
+                    user_input.pop(CONF_LLM_HASS_API, None)
 
                 self._validate_selected_model(user_input)
 
@@ -138,7 +132,7 @@ class YandexGPTOptionsFlow(OptionsFlow):
                 options = {
                     CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
                     CONF_PROMPT: user_input[CONF_PROMPT],
-                    CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
+                    CONF_LLM_HASS_API: user_input.get(CONF_LLM_HASS_API),
                     CONF_CHAT_MODEL: user_input[CONF_CHAT_MODEL],
                     CONF_ENABLE_SERVER_DATA_LOGGING: user_input[CONF_ENABLE_SERVER_DATA_LOGGING],
                 }
@@ -146,6 +140,12 @@ class YandexGPTOptionsFlow(OptionsFlow):
         suggested_values = options.copy()
         if not suggested_values.get(CONF_PROMPT):
             suggested_values[CONF_PROMPT] = DEFAULT_INSTRUCTIONS_PROMPT_RU
+
+        # Migration: old single string / "none" → new list format
+        if CONF_LLM_HASS_API in suggested_values:
+            value = suggested_values[CONF_LLM_HASS_API]
+            if isinstance(value, str):
+                suggested_values[CONF_LLM_HASS_API] = [] if value == "none" else [value]
 
         if suggested_values.get(CONF_CHAT_MODEL):
             deprecated_model_name = suggested_values[CONF_CHAT_MODEL].split("/")[0]
@@ -163,22 +163,23 @@ class YandexGPTOptionsFlow(OptionsFlow):
         )
 
     def _validate_selected_model(self, user_input: dict[str, Any]) -> None:
-        """Validate the selected model."""
-        is_assist_enabled = user_input.get(CONF_LLM_HASS_API, "none") != "none"
-        if not is_assist_enabled:
+        """Validate model when any LLM HASS API (Assist or MCP) is selected."""
+        llm_apis: list[str] = user_input.get(CONF_LLM_HASS_API) or []
+        if isinstance(llm_apis, str):  # safety for old data
+            llm_apis = [llm_apis] if llm_apis != "none" else []
+
+        if not llm_apis:
             self.errors.pop(CONF_CHAT_MODEL, None)
             return
 
         selected_model = user_input.get(CONF_CHAT_MODEL)
         if selected_model in ASSIST_UNSUPPORTED_MODELS:
-            # Block completely for unsupported models
-            self.errors[CONF_CHAT_MODEL] = "model_not_supported_for_assist"
+            self.errors[CONF_CHAT_MODEL] = "model_not_supported_for_tools"
         elif selected_model in ASSIST_PARTIALLY_SUPPORTED_MODELS:
-            # Show warning but allow continuing if form is resubmitted
             if self.last_selected_model == selected_model:
                 self.errors.pop(CONF_CHAT_MODEL, None)
             else:
-                self.errors[CONF_CHAT_MODEL] = "model_partially_supported_for_assist"
+                self.errors[CONF_CHAT_MODEL] = "model_partially_supported_for_tools"
 
         self.last_selected_model = selected_model
 
@@ -189,18 +190,9 @@ def yandexgpt_config_option_schema(
 ) -> dict:
     """Return a schema for YandexGPT completion options."""
     hass_apis: list[SelectOptionDict] = [
-        SelectOptionDict(
-            label="No access to devices",
-            value="none",
-        )
-    ]
-    hass_apis.extend(
-        SelectOptionDict(
-            label=api.name,
-            value=api.id,
-        )
+        SelectOptionDict(label=api.name, value=api.id)
         for api in llm.async_get_apis(hass)
-    )
+    ]
 
     chat_models = [SelectOptionDict(value=value, label=label) for value, label in CHAT_MODELS]
 
@@ -209,10 +201,12 @@ def yandexgpt_config_option_schema(
         vol.Optional(
             CONF_LLM_HASS_API,
             description={"suggested_value": options.get(CONF_LLM_HASS_API)},
-            default="none",
         ): SelectSelector(
             SelectSelectorConfig(
-                options=hass_apis, translation_key=CONF_LLM_HASS_API)
+                options=hass_apis,
+                multiple=True,
+                translation_key=CONF_LLM_HASS_API,
+            )
         ),
         vol.Optional(
             CONF_CHAT_MODEL,
@@ -224,9 +218,7 @@ def yandexgpt_config_option_schema(
         ),
         vol.Required(
             CONF_ENABLE_SERVER_DATA_LOGGING,
-            default=options.get(
-                CONF_ENABLE_SERVER_DATA_LOGGING, DEFAULT_ENABLE_SERVER_DATA_LOGGING
-            ),
+            default=options.get(CONF_ENABLE_SERVER_DATA_LOGGING, DEFAULT_ENABLE_SERVER_DATA_LOGGING),
         ): bool,
         vol.Required(
             CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, False)
