@@ -108,7 +108,7 @@ class YandexGPTConversationEntity(
 
         if chat_log.llm_api:
             model_conf["tools"] = [
-                ContentConverter.format_tool(tool, chat_log.llm_api.custom_serializer)
+                ContentConverter.format_tool(client, tool, chat_log.llm_api.custom_serializer)
                 for tool in chat_log.llm_api.tools
             ]
 
