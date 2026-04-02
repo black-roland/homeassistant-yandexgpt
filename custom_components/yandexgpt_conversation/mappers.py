@@ -12,14 +12,14 @@ from homeassistant.components import conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 from voluptuous_openapi import convert
-from yandex_cloud_ml_sdk._models.completions.message import \
+from yandex_ai_studio_sdk._models.completions.message import \
     CompletionsMessageType
-from yandex_cloud_ml_sdk._models.completions.message import \
+from yandex_ai_studio_sdk._models.completions.message import \
     FunctionResultMessageDict as ToolResultsMessageType
-from yandex_cloud_ml_sdk._models.completions.result import (AlternativeStatus,
-                                                            GPTModelResult)
-from yandex_cloud_ml_sdk._tools.tool import FunctionTool
-from yandex_cloud_ml_sdk._tools.tool_call import AsyncToolCall
+from yandex_ai_studio_sdk._models.completions.result import (AlternativeStatus,
+                                                             GPTModelResult)
+from yandex_ai_studio_sdk._tools.tool import FunctionTool
+from yandex_ai_studio_sdk._tools.tool_call import AsyncToolCall
 
 from .const import DOMAIN, LOGGER
 
@@ -161,6 +161,6 @@ class ContentConverter:
         return FunctionTool(
             name=tool.name,
             description=tool.description,
-            parameters=convert(
-                tool.parameters, custom_serializer=custom_serializer),
+            parameters=convert(tool.parameters, custom_serializer=custom_serializer),
+            strict=True,
         )
