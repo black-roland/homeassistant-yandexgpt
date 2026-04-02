@@ -36,7 +36,7 @@
         },
         "data_description": {
           "chat_model": "Model descriptions [can be found in the official documentation](https://yandex.cloud/en/docs/foundation-models/concepts/yandexgpt/models#yandexgpt-generation).",
-          "llm_hass_api": "Allows the AI to control devices via function calling. Uses extra tokens.",
+          "llm_hass_api": "Allows the AI to control devices and call MCPs. Uses extra tokens.",
           "prompt": "Instruct how the LLM should respond. This can be a template.",
           "enable_server_data_logging": "Enable logging of requests on Yandex Cloud servers",
           "no_ha_default_prompt": "Disables automatic appending of time and devices list"
