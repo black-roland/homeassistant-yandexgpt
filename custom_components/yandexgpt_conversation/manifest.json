@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
   "loggers": ["yandexgpt_conversation"],
   "requirements": ["yandex-ai-studio-sdk==0.20.0"],
-  "version": "1.5.5"
+  "version": "1.6.0"
 }
