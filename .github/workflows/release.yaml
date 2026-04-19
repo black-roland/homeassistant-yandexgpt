@@ -13,9 +13,9 @@ jobs:
       contents: write
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v6"
+        uses: "actions/checkout@v6.0.2"
       - name: "Verify the release version"
-        uses: technote-space/package-version-check-action@v1
+        uses: technote-space/package-version-check-action@v1.9.3
         with:
           COMMIT_DISABLED: true
           PACKAGE_DIR: ${{ github.workspace }}/custom_components/yandexgpt_conversation
@@ -26,7 +26,7 @@ jobs:
           cd "${{ github.workspace }}/custom_components/yandexgpt_conversation"
           zip -r "${{ runner.temp }}/yandexgpt.zip" ./
       - name: "Publish"
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.2
         with:
           draft: true
           files: ${{ runner.temp }}/yandexgpt.zip
