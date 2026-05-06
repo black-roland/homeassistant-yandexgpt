@@ -10,6 +10,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/black-roland/homeassistant-yandexgpt/issues",
   "loggers": ["yandexgpt_conversation"],
-  "requirements": ["yandex-ai-studio-sdk==0.20.0"],
+  "requirements": ["yandex-ai-studio-sdk==0.20.2"],
   "version": "1.6.0"
 }
