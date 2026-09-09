@@ -32,7 +32,8 @@ from .const import (ASSIST_PARTIALLY_SUPPORTED_MODELS,
                     DEFAULT_ENABLE_SERVER_DATA_LOGGING,
                     DEFAULT_INSTRUCTIONS_PROMPT_RU,
                     DEFAULT_MAX_TOOL_ITERATIONS, DEFAULT_MODEL_VERSION,
-                    DEFAULT_NO_HA_DEFAULT_PROMPT, DOMAIN,
+                    DEFAULT_NO_HA_DEFAULT_PROMPT, DOC_CHAT_MODELS_URL,
+                    DOC_PRICING_URL, DOC_PROMPT_TEMPLATES_URL, DOMAIN,
                     RECOMMENDED_MAX_TOKENS, RECOMMENDED_TEMPERATURE)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
@@ -160,6 +161,11 @@ class YandexGPTOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=schema,
             errors=self.errors,
+            description_placeholders={
+                "chat_model_doc_url": DOC_CHAT_MODELS_URL,
+                "pricing_doc_url": DOC_PRICING_URL,
+                "prompt_templates_url": DOC_PROMPT_TEMPLATES_URL,
+            },
         )
 
     def _validate_selected_model(self, user_input: dict[str, Any]) -> None:
