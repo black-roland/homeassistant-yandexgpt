@@ -1,0 +1,32 @@
+name: Issue Manager
+
+on:
+  schedule:
+    - cron: "0 2 */3 * *"
+  issue_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  issue-manager:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tiangolo/issue-manager@0.8.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config: >
+            {
+              "awaiting-response": {
+                "delay": "P7D",
+                "message": "Этот issue закрыт автоматически, потому что не было ответа в течение 7 дней после запроса дополнительной информации.\n\nЕсли проблема всё ещё актуальна — просто напишите комментарий или откройте новый issue."
+              },
+              "needs-info": {
+                "delay": "P14D",
+                "message": "Закрываю issue: не хватает информации."
+              }
+            }
