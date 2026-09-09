@@ -11,7 +11,7 @@ from typing import Any, Iterable, Optional, cast
 from homeassistant.components import conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
-from voluptuous_openapi import convert
+from probatio import to_openapi
 from yandex_ai_studio_sdk import AsyncAIStudio
 from yandex_ai_studio_sdk._models.completions.message import \
     CompletionsMessageType
@@ -160,6 +160,6 @@ class ContentConverter:
         return sdk.tools.function(
             name=tool.name,
             description=tool.description or "",
-            parameters=convert(tool.parameters, custom_serializer=custom_serializer),
+            parameters=to_openapi(tool.parameters, custom_serializer=custom_serializer),
             strict=False,
         )
