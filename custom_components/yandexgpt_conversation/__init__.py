@@ -19,6 +19,7 @@ from homeassistant.helpers.typing import ConfigType
 from .const import (ATTR_FILENAME, ATTR_PROMPT, ATTR_SEED,
                     CONF_ENABLE_SERVER_DATA_LOGGING, CONF_FOLDER_ID,
                     DEFAULT_ENABLE_SERVER_DATA_LOGGING, DOMAIN, LOGGER)
+from .sdk_workaround import async_ensure_sdk
 
 SERVICE_GENERATE_IMAGE = "generate_image"
 PLATFORMS = (Platform.CONVERSATION,)
@@ -26,6 +27,9 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, entry: ConfigType) -> bool:
+    if not await async_ensure_sdk(hass):
+        return False
+
     def write_image_to_file(image_bytes: bytes, file_name: str) -> str:
         try:
             LOGGER.debug("Writing image to file: %s...", file_name)
