@@ -16,5 +16,5 @@
     "googleapis-common-protos>=1.74.0,<2",
     "httpx-sse>=0.4.1"
   ],
-  "version": "1.6.1"
+  "version": "1.6.2"
 }
