@@ -17,13 +17,14 @@ protobuf to satisfy yandexcloud and break other integrations.
 from __future__ import annotations
 
 import importlib
+import inspect
 import os
 import site
 import sys
 from subprocess import PIPE, Popen
+from typing import Any
 from urllib.parse import urlparse
 
-from homeassistant.bootstrap import async_mount_local_lib_path
 from homeassistant.core import HomeAssistant
 from homeassistant.requirements import pip_kwargs
 from homeassistant.util import package as pkg_util
@@ -40,7 +41,7 @@ NO_DEPS_REQUIREMENTS = (
 
 async def async_ensure_sdk(hass: HomeAssistant) -> bool:
     """Install SDK wheels that cannot be resolved against Home Assistant's protobuf pin."""
-    missing = [req for req in NO_DEPS_REQUIREMENTS if not pkg_util.is_installed(req)]
+    missing = await hass.async_add_executor_job(_missing_requirements)
     if not missing:
         return True
 
@@ -52,8 +53,7 @@ async def async_ensure_sdk(hass: HomeAssistant) -> bool:
         LOGGER.error("YandexGPT dependencies are not installed: %s", ", ".join(missing))
         return False
 
-    if not pkg_util.is_virtual_env():
-        await async_mount_local_lib_path(hass.config.config_dir)
+    await _async_mount_deps(hass)
 
     installed = await hass.async_add_executor_job(
         _install_missing, missing, hass.config.config_dir
@@ -63,9 +63,32 @@ async def async_ensure_sdk(hass: HomeAssistant) -> bool:
     return installed
 
 
+def _missing_requirements() -> list[str]:
+    """Return SDK requirements that are not already installed."""
+    return [req for req in NO_DEPS_REQUIREMENTS if not pkg_util.is_installed(req)]
+
+
+async def _async_mount_deps(hass: HomeAssistant) -> None:
+    """Mount config/deps on Home Assistant versions that still install there."""
+    if pkg_util.is_virtual_env():
+        return
+    try:
+        from homeassistant.bootstrap import async_mount_local_lib_path
+    except ImportError:
+        return
+    await async_mount_local_lib_path(hass.config.config_dir)
+
+
+def _pip_install_kwargs(config_dir: str) -> dict[str, Any]:
+    """Return pip kwargs for this Home Assistant version."""
+    if "config_dir" in inspect.signature(pip_kwargs).parameters:
+        return pip_kwargs(config_dir)
+    return pip_kwargs()
+
+
 def _install_missing(requirements: list[str], config_dir: str) -> bool:
     """Install requirements with --no-deps so protobuf is not downgraded."""
-    kwargs = pip_kwargs(config_dir)
+    kwargs = _pip_install_kwargs(config_dir)
     target = kwargs.get("target")
     timeout = kwargs.get("timeout")
     for requirement in requirements:
