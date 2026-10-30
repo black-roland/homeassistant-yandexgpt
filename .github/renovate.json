@@ -18,6 +18,6 @@
       "groupName": "integration requirements"
     }
   ],
-  "rangeStrategy": "pin",
+  "rangeStrategy": "widen",
   "reviewersFromCodeOwners": true
 }
