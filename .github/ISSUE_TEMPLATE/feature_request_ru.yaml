@@ -1,0 +1,30 @@
+name: Запросить новый функционал
+description: Предложить новую функцию или сценарий использования
+title: "Улучшение: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу это решит?
+      description: |
+        Что хотите сделать? Что сейчас мешает?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое решение
+      description: |
+        В любом формате — словами, примером конфигурации или ссылкой на похожее решение.
+
+  - type: input
+    id: boosty
+    attributes:
+      label: Ваше имя на Boosty
+      placeholder: ivan.ivanov.99
+      description: |
+        Если вы [подписчик на Boosty](https://boosty.to/mansmarthome), то укажите, пожалуйста, никнейм или часть email — лишь бы я понял, о ком речь.
+
+        ⚠️ Данные доступны публично, поэтому полный email лучше не оставлять.

@@ -1,0 +1,30 @@
+name: Request a new feature
+description: Suggest a new feature or a use case
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: |
+        What are you trying to do? What is stopping you right now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: |
+        Any format — plain words, a config example, or a link to a similar solution.
+
+  - type: input
+    id: boosty
+    attributes:
+      label: Your Boosty name
+      placeholder: ivan.ivanov.99
+      description: |
+        If you are a [Boosty supporter](https://boosty.to/mansmarthome), please share your nickname or part of your email — just enough for me to recognize you.
+
+        ⚠️ This data is publicly visible, so it's better not to leave a full email.

@@ -1,0 +1,51 @@
+name: Report a problem
+description: Something doesn't work or works incorrectly
+title: "Problem: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the problem
+      description: What happens and what did you expect instead?
+      placeholder: |
+        After updating Home Assistant from 2026.9.4 to 2026.10.0 the integration fails to load.
+        The log shows a dependency installation error: a package version conflict. Entities become unavailable and voice assistant pipelines stop working.
+        Everything worked on the previous HA version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        The most valuable part — without logs I can mostly only guess.
+        - In the log (*Settings* → *System* → *Logs*) click the related error, then the copy icon.
+        - If there are no errors in the log, select *Enable debug logging* in the integration menu (*Settings* → *Devices & services* → *<integration name>* → *⋮*), reproduce the problem and attach the log.
+      placeholder: |
+        Logger: homeassistant.components.open_router
+        Source: components/open_router/entity.py:296
+        integration: OpenRouter (documentation, issues)
+        First occurred: November 16, 2026 at 06:24:24 (3 occurrences)
+        Last logged: November 16, 2026 at 06:25:24
+
+        Error talking to API: Connection error.
+      render: text
+
+  - type: input
+    id: boosty
+    attributes:
+      label: Your Boosty name
+      placeholder: ivan.ivanov.99
+      description: |
+        If you are a [Boosty supporter](https://boosty.to/mansmarthome), please share your nickname or part of your email — just enough for me to recognize you.
+
+        ⚠️ This data is publicly visible, so it's better not to leave a full email.
+
+  - type: input
+    id: versions
+    attributes:
+      label: Home Assistant and integration version
+      description: The version is shown in *Settings* → *Devices & services* on the integration card.
+      placeholder: "HA: 2026.11, integration: 1.2"

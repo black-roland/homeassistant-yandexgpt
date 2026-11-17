@@ -1,0 +1,51 @@
+name: Сообщить о проблеме
+description: Что-то не работает или работает неправильно
+title: "Проблема: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Опишите проблему
+      description: Что происходит и что вы ожидали вместо этого?
+      placeholder: |
+        После обновления Home Assistant с 2026.9.4 до 2026.10.0 интеграция перестала загружаться.
+        В журнале ошибка установки зависимостей: конфликт версий пакетов. Объекты стали недоступны, сценарии с голосовым ассистентом не работают.
+        На предыдущей версии HA всё работало.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи
+      description: |
+        Самая ценная часть — без логов я могу только гадать.
+        - В журнале (*Настройки* → *Система* → *Журнал сервера*) нажмите на связанную ошибку, а затем на значок копирования.
+        - Если ошибок в журнале нет, то выберите *Начать отладку* в меню интеграции (*Настройки* → *Устройства и службы* → *<название интеграции>* → *⋮*), воспроизведите проблему и приложите лог.
+      placeholder: |
+        Logger: homeassistant.components.open_router
+        Source: components/open_router/entity.py:296
+        integration: OpenRouter (documentation, issues)
+        First occurred: November 16, 2026 at 06:24:24 (3 occurrences)
+        Last logged: November 16, 2026 at 06:25:24
+
+        Error talking to API: Connection error.
+      render: text
+
+  - type: input
+    id: boosty
+    attributes:
+      label: Ваше имя на Boosty
+      placeholder: ivan.ivanov.99
+      description: |
+        Если вы [подписчик на Boosty](https://boosty.to/mansmarthome), то укажите, пожалуйста, никнейм или часть email — лишь бы я понял, о ком речь.
+
+        ⚠️ Данные доступны публично, поэтому полный email лучше не оставлять.
+
+  - type: input
+    id: versions
+    attributes:
+      label: Версия Home Assistant и интеграции
+      description: Версия отображается в разделе *Устройства и службы* на карточке интеграции.
+      placeholder: "HA: 2026.11, интеграция: 1.2"
